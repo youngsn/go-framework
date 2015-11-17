@@ -39,3 +39,33 @@ components:
 - pprof (golang performance monitor)
 - monitor interface (monitor module status)
 - ticker tasks (run task interval)
+
+
+code specification:
+- module implements (use interface)
+- ticker task implements (use config & handler)
+- project consts defines
+- code specifications
+
+## Third packages
+
+veronica also uses some fantastic third packages, thanks very much to these authors.
+
+- [seelog log engine](https://github.com/cihub/seelog) master
+- [toml config parser](https://github.com/BurntSushi/toml) master
+- [MySQL driver](https://github.com/go-sql-driver/mysql) master
+- [gorm orm lib](https://github.com/jinzhu/gorm) master
+
+## TODO
+
+As what I know, I just implements all what I think is useful. So hope more and more people provides your own fantastic package and ideas :).
+
+## Author
+
+**TangYang**
+<youngsn.tang@gmail.com>
+
+
+## License
+
+Released under the [MIT License](https://github.com/youngsn/veronica/blob/master/License).
