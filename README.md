@@ -9,8 +9,11 @@ Veronica provides lots of useful infrasturcture and code specification, basicall
 ## Getting started
 
 Firstly, getting all depends packages.
+
 Then, Clone veronica from github.com, change the dirname to your own project name.
+
 Run script/init.sh project\_name, change your own GOPATH to this dir in .bash\_profile, reload bash.
+
 Now project has been initialized successfully, you can start to development your own back-end programs.
 
 ``` shell
