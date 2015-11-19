@@ -5,4 +5,4 @@
 
 ROOT=$(cd `dirname $0`; cd ..; pwd)
 NAME=${ROOT##*/}
-go build -o $ROOT/bin/$NAME -v -n -x $ROOT/src/optimus/main.go
+go build -o $ROOT/bin/$NAME -v -n -x $ROOT/src/$NAME/main.go
