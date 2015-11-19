@@ -1,4 +1,5 @@
-# veronica
+# Veronica
+
 golang back-end framework &amp; code specification
 
 Veronica is a back-end service framework written by golang. You can build your own back-end service and code specification quickly.
@@ -34,7 +35,7 @@ $ ./bin/$proj -c conf/conf.development.toml
 
 > veronica provides a lot of basic components & module implements & code specification, you can change to your own quickly:
 
-components:
+components: 
 - log engine (seelog)
 - MySQL orm library (gorm)
 - config parser (toml)
@@ -43,10 +44,9 @@ components:
 - monitor interface (monitor module status)
 - ticker tasks (run task interval)
 
-
 code specification:
 - module implements (use interface)
-- ticker task implements (use config & handler)
+- ticker task implements (use config &amp; handler)
 - project consts defines
 - code specifications
 
@@ -71,4 +71,4 @@ As what I know, I just implements all what I think is useful. So hope more and m
 
 ## License
 
-Released under the [MIT License](https://github.com/youngsn/veronica/blob/master/License).
+Released under the [MIT License](https://github.com/youngsn/veronica/blob/master/LICENSE).
