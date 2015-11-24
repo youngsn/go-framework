@@ -18,8 +18,8 @@ Run script/init.sh project\_name, change your own GOPATH to this dir in .bash\_p
 Now project has been initialized successfully, you can start to development your own back-end programs.
 
 ``` shell
-$ git clone https://github.com/youngsn/go-framework
-$ mv go-framework $proj_name
+$ git clone https://github.com/youngsn/veronica
+$ mv veronica $proj_name
 $ chmod +x script/*
 $ ./script/init.sh $proj_name
 ```
