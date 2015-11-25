@@ -22,7 +22,7 @@ import(
 // One direct chan can send SINGAL to module main goroutines.
 type ModuleManager struct {
     Modules             map[string]Module            // custome module map
-    modulesPriority     []string                     // module priority array
+    priority            []string                     // module priority array
     moduleStopDelay     int                          // module force shutdown waiting time
     pipes               map[string]chan SIGNAL       // module pipe map
 
@@ -33,18 +33,12 @@ type ModuleManager struct {
 }
 
 
-func NewModuleManager(m map[string]Module, p []string) *ModuleManager {
-    pipes                  := map[string]chan SIGNAL{}
-    for moduleName, module := range m {             // init pipe chan, module Ctrl() method get chan pointer
-        pipes[moduleName]   = make(chan SIGNAL, 1)
-        module.Ctrl(pipes[moduleName])
-    }
-
+func NewModuleManager() *ModuleManager {
     return &ModuleManager{
-        Modules            : m,
-        modulesPriority    : p,
+        Modules            : map[string]Module{},
+        priority           : []string{},
         moduleStopDelay    : 30,                   // waiting 30s then module stop abandoned
-        pipes              : pipes,
+        pipes              : map[string]chan SIGNAL{},
         mu                 : new(sync.Mutex),
         SysMonitor         : NewMonitor(),
         SysTimerTask       : NewTimerTask(),
@@ -52,21 +46,32 @@ func NewModuleManager(m map[string]Module, p []string) *ModuleManager {
 }
 
 
+// init module to module manager
+func (this *ModuleManager) InitModule(name string, m Module) {
+    this.Modules[name]     = m
+    this.priority          = append(this.priority, name)
+
+    // init pipe chan, module Ctrl() method get chan pointer
+    this.pipes[name]       = make(chan SIGNAL, 1)
+    m.Ctrl(this.pipes[name])
+}
+
+
 // Sending broadcast message to all modules.
 // Custome SIGNAL can be defined.
-func (this *ModuleManager) SendBoardcast(signal SIGNAL) {
+func (this *ModuleManager) SendBoardcast(s SIGNAL) {
     for _, modulePipe := range this.pipes {
-        modulePipe<- signal
+        modulePipe<- s
     }
 }
 
 
 // Send SIGNAL to one module.
-func (this *ModuleManager) SendSignal(signal SIGNAL, name string) error {
+func (this *ModuleManager) SendSignal(s SIGNAL, name string) error {
     if _, ok := this.Modules[name]; !ok {
         return fmt.Errorf("module %s not exist", name)
     }
-    this.pipes[name]<- signal
+    this.pipes[name]<- s
 
     return nil
 }
@@ -76,28 +81,34 @@ func (this *ModuleManager) SendSignal(signal SIGNAL, name string) error {
 // Method used SendBoardcast() sending START SIGNAL.
 // Also here can be changed in sequence as expected.
 // Module should start in time, or panic will be throwned.
-func (this *ModuleManager) StartModules() {
-    this.SendBoardcast(SIGNAL_START)
+func (this *ModuleManager) StartModules() error {
+    if len(this.Modules) == 0 {
+        return fmt.Errorf("Start failed, no module exist")
+    }
+
+    this.SendBoardcast(SIGSTART)
 
     // start modules
-    started              := false
+    started           := false
     for started != true {
-        startedModules   := 0
+        startModule   := 0
         for _, module := range this.Modules {
             if module.Status() == Running {
-                startedModules++
+                startModule++
             } else {
                 time.Sleep(time.Microsecond * 100)       // if not started, sleep 100ms
             }
         }
 
-        if len(this.Modules) == startedModules {
+        if len(this.Modules) == startModule {
             started           = true
         }
     }
 
     this.SysMonitor.Start()
     this.SysTimerTask.Start()
+
+    return nil
 }
 
 
@@ -107,12 +118,12 @@ func (this *ModuleManager) StopModules() {
     this.SysMonitor.Stop()
     this.SysTimerTask.Stop()
 
-    for _, moduleName := range this.modulesPriority {
-        err           := this.stopModule(moduleName)
-        if err != nil {
-            Log.Warnf("module %s not stopped, %s", moduleName, err.Error())
+    for _, name := range this.priority {
+        err     := this.stopModule(name)
+        if err  != nil {
+            Log.Warnf("module %s not stopped, %s", name, err.Error())
         } else {
-            Log.Infof("module %s stopped", moduleName)
+            Log.Infof("module %s stopped", name)
         }
     }
 }
@@ -128,7 +139,7 @@ func (this *ModuleManager) stopModule(name string) error {
         return fmt.Errorf("%s not exist", name)
     }
 
-    this.SendSignal(SIGNAL_STOP, name)
+    this.SendSignal(SIGSTOP, name)
     timer       := time.NewTimer(time.Duration(this.moduleStopDelay) * time.Second)
 
     stopped     := false
@@ -136,12 +147,12 @@ func (this *ModuleManager) stopModule(name string) error {
         select {
         case <-timer.C:
             this.unloadModule(name)
-            stopped            = true
+            stopped             = true
             return fmt.Errorf("can not stop over 30s, check Stop() code carefully")
         default:
             if module.Status() == Stopped {
                 this.unloadModule(name)
-                stopped        = true
+                stopped         = true
             } else {
                 time.Sleep(time.Microsecond * 100)
             }
@@ -161,16 +172,14 @@ func (this *ModuleManager) unloadModule(name string) {
         delete(this.Modules, name)
     }
 
-    newPriority       := []string{}
-    for _, moduleName := range this.modulesPriority {   // delete module from array
-        if moduleName != name {
-            newPriority     = append(newPriority, moduleName)
+    for i, moduleName := range this.priority {   // delete module from array
+        if moduleName == name {                  // delete
+            this.priority   = append(this.priority[:i], this.priority[i+1:]...)
+            break
         } else {
             continue
         }
     }
-
-    this.modulesPriority    = newPriority
 }
 
 

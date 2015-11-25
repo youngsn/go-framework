@@ -51,13 +51,10 @@ func Initialize() error {
 
 // Init custome modules here.
 func modulesInit() *ModuleManager {
-    modules                 := map[string]c.Module{}
-    priority                := []string{}
+    m                 := NewModuleManager()
+    m.InitModule("Demo", demo.NewDManager())
 
-    modules["demo"]          = demo.NewDManager()
-    priority                 = append(priority, "demo")
-
-    return NewModuleManager(modules, priority)
+    return m
 }
 
 

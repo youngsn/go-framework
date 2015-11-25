@@ -6,6 +6,8 @@ Veronica is a back-end service framework written by golang. You can build your o
 
 Veronica provides lots of useful infrasturcture and code specification, basically covered most elements back-end service should have. And also provides many convenient components which golang style implements.
 
+## Features
+
 
 ## Getting started
 

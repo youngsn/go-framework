@@ -26,7 +26,9 @@ func main() {
     runtime.GOMAXPROCS(processors)
 
     s.SysPprofMonitor.WebPprofMonitor()     // pprof
-    s.SysManager.StartModules()             // modules
+    if err := s.SysManager.StartModules(); err != nil {             // modules
+        panic(err.Error())
+    }
 
     sysSignal     := s.NewSignal()          // system signal
     sysSignal.Start()

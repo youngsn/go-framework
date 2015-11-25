@@ -41,18 +41,18 @@ const (
 // You can add more own SIGNALs for modules.
 type SIGNAL int
 const (
-    SIGNAL_START SIGNAL  = iota + 1
-    SIGNAL_STOP
-    SIGNAL_RELOAD
+    SIGSTART SIGNAL  = iota + 1
+    SIGSTOP
+    SIGRELOAD
 )
 
 func (t SIGNAL) String() string {
     switch t {
-    case SIGNAL_START:
+    case SIGSTART:
         return "Start"
-    case SIGNAL_STOP:
+    case SIGSTOP:
         return "Stop"
-    case SIGNAL_RELOAD:
+    case SIGRELOAD:
         return "Reload"
     default:
         return "unknown"

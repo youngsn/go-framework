@@ -52,9 +52,9 @@ func (this *DManager) Ctrl(m <-chan SIGNAL) {
         for {
             select {
             case signal := <-m:
-                if signal == SIGNAL_START {
+                if signal == SIGSTART {
                     this.run()
-                } else if signal == SIGNAL_STOP {
+                } else if signal == SIGSTOP {
                     this.stop()
                 }
             default:

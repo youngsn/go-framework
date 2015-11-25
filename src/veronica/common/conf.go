@@ -6,6 +6,9 @@ package common
 // You should add your own Config into this.
 // You can also change config parsers if you wish to. ~_~
 // @author tangyang
+import(
+)
+
 
 type ConfigStruct struct {
     Name             string
@@ -16,6 +19,7 @@ type ConfigStruct struct {
 
     Tickers          map[string]TickerConf
     Databases        map[string]DatabaseConf
+    Redis            map[string]RedisConf
     Logger           map[string]LoggerConf
 }
 
@@ -44,6 +48,12 @@ type DatabaseConf struct {
     Password         string
     DbName           string
     LogMode          bool
+}
+
+type RedisConf struct {
+    Host             string
+    DbName           int
+    Password         string
 }
 
 type LoggerConf struct {
