@@ -48,11 +48,9 @@ func NewTimerTask() *TimerTask {
 // Start TriggerTasks instance.
 // NOTICE: All task are started by goroutine.
 func (this *TimerTask) Start() {
-    Log.Infof("Tricker Thread, start")
-
-    this.State   = Running
     this.initTickerTask()                   // init timer tickers
 
+    this.State   = Running
     for _, task := range this.tickerTask {
         go func(task *TickerTask) {         // start by goroutine
             for this.State == Running {
@@ -72,20 +70,22 @@ func (this *TimerTask) Start() {
             }
         }(task)
     }
+
+    Log.Infof("Tricker Thread, start")
 }
 
 
 // Init ticker tasks from config file.
 // Task handler are all from trigger_handler.go.
 func (this *TimerTask) initTickerTask() {
-    for name, ticker  := range Config.Tickers {
-        handler       := getTickerHandler(name)          // get task handler
+    for name, ticker := range Config.Tickers {
+        handler      := getTickerHandler(name)          // get task handler
         if ticker.Interval < this.minInterval {
             panic(fmt.Sprintf("Task %s, interval must large %ds", name, this.minInterval))
         }
-        tk            := time.NewTicker(time.Second * time.Duration(ticker.Interval))
+        tk           := time.NewTicker(time.Second * time.Duration(ticker.Interval))
 
-        t             := &TickerTask{
+        t            := &TickerTask{
             Name      : name,
             Status    : false,
             Tk        : tk,

@@ -89,19 +89,12 @@ func (this *ModuleManager) StartModules() error {
     this.SendBoardcast(SIGSTART)
 
     // start modules
-    started           := false
+    started                  := false
     for started != true {
-        startModule   := 0
-        for _, module := range this.Modules {
-            if module.Status() == Running {
-                startModule++
-            } else {
-                time.Sleep(time.Microsecond * 100)       // if not started, sleep 100ms
-            }
-        }
-
-        if len(this.Modules) == startModule {
+        if len(this.Modules) == this.StartedModuleNum() {
             started           = true
+        } else {
+            time.Sleep(DefaultSleepDur)
         }
     }
 
@@ -118,14 +111,47 @@ func (this *ModuleManager) StopModules() {
     this.SysMonitor.Stop()
     this.SysTimerTask.Stop()
 
-    for _, name := range this.priority {
-        err     := this.stopModule(name)
-        if err  != nil {
+    p           := make([]string, len(this.priority))
+    copy(p, this.priority)
+    for _, name := range p {
+        if err  := this.stopModule(name); err != nil {
             Log.Warnf("module %s not stopped, %s", name, err.Error())
         } else {
             Log.Infof("module %s stopped", name)
         }
     }
+}
+
+
+// Get Started module quantity.
+func (this *ModuleManager) StartedModuleNum() int {
+    s        := 0
+    for _, m := range this.Modules {
+        if m.Status() == Running {
+            s++
+        }
+    }
+
+    return s
+}
+
+
+// Get Stopped module qunatity.
+func (this *ModuleManager) StoppedModuleNum() int {
+    s        := 0
+    for _, m := range this.Modules {
+        if m.Status() == Stopped {
+            s++
+        }
+    }
+
+    return s
+}
+
+
+// Get Manager manage module quantity.
+func (this *ModuleManager) ModulsNum() int {
+    return len(this.Modules)
 }
 
 
@@ -148,7 +174,7 @@ func (this *ModuleManager) stopModule(name string) error {
         case <-timer.C:
             this.unloadModule(name)
             stopped             = true
-            return fmt.Errorf("can not stop over 30s, check Stop() code carefully")
+            return fmt.Errorf("can not stop in 30s, abandon this module")
         default:
             if module.Status() == Stopped {
                 this.unloadModule(name)

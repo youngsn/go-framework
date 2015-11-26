@@ -15,13 +15,13 @@ import (
 
 
 type DbConnection struct {
-    Db          *gorm.DB
+    Conn        *gorm.DB
 }
 
 
 func NewDbConnection(dbFlag string) (*DbConnection, error) {
     if _, exist := Config.Databases[dbFlag]; !exist {
-       return nil, fmt.Errorf("flag %s, not exist", dbFlag)
+       return nil, fmt.Errorf("dbFlag %s, not exist", dbFlag)
     }
 
     dbConfig    := Config.Databases[dbFlag]
@@ -46,7 +46,7 @@ func NewDbConnection(dbFlag string) (*DbConnection, error) {
     }
 
     return &DbConnection{
-        Db: &dbConn,
+        Conn : &dbConn,
     }, nil
 }
 

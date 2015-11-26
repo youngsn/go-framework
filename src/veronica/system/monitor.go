@@ -34,11 +34,11 @@ func NewMonitor() *Monitor {
 func (this *Monitor) Start() {
     this.State      = Running
     go this.run()
+    seelog.Infof("Monitor thread, started")
 }
 
 
 func (this *Monitor) run() {
-    this.logger.Infof("Monitor thread, started")
     for this.State == Running {
         select {
         case <-this.timer.C:
@@ -57,7 +57,7 @@ func (this *Monitor) run() {
 
 func (this *Monitor) Stop() {
     this.State       = Stopped
-    this.logger.Infof("Monitor thread, stopped")
+    seelog.Infof("Monitor thread, stopped")
 }
 
 
@@ -83,7 +83,7 @@ func (this *Monitor) modulesMonitor() {
 }
 
 
-// 内部常量监控，etc：内部队列情况
+// system monitors can set here
 func (this *Monitor) systemMonitor() {
 }
 

@@ -14,17 +14,17 @@ import (
 
 
 // Get seelog instance according to module name.
-func GetLogger(loggerName string) seelog.LoggerInterface {
-    if logInstance, ok := LoggerFactory["default"]; ok {
+func GetLogger(name string) seelog.LoggerInterface {
+    if logInstance, ok := LoggerFactory[name]; ok {
         return logInstance
     } else {
-        panic(fmt.Sprintf("logger %s not exist", loggerName))
+        panic(fmt.Sprintf("logger %s not exist", name))
     }
 }
 
 
 // If filepath exists, will auto create one if not exist.
-func FileExist(path string) error {
+func FilePathExist(path string) error {
     if _, err  := os.Stat(path); os.IsNotExist(err) {
         if err := os.Mkdir(path, 0775); err != nil {
             return err
@@ -36,8 +36,9 @@ func FileExist(path string) error {
 
 
 // Write main pid into pidfile.
-var pidFile string    = RunPath + "run.pid"      // pid
 func WritePid() error {
+    pidFile          := RunPath + "run.pid"      // pid
+
     pid              := os.Getpid()
     fd, err          := os.OpenFile(pidFile, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     defer fd.Close()
@@ -52,6 +53,8 @@ func WritePid() error {
 
 
 func UnlinkPid() {
+    pidFile          := RunPath + "run.pid"      // pid
+
     syscall.Unlink(pidFile)
 }
 

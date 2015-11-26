@@ -46,8 +46,8 @@ const (
     SIGRELOAD
 )
 
-func (t SIGNAL) String() string {
-    switch t {
+func (s SIGNAL) String() string {
+    switch s {
     case SIGSTART:
         return "Start"
     case SIGSTOP:
@@ -65,6 +65,7 @@ type RState int
 const (
     Running RState       = iota + 1
     Stopped
+    Waiting
 )
 
 func (s RState) String() string {
@@ -73,6 +74,8 @@ func (s RState) String() string {
         return "Running"
     case Stopped:
         return "Stopped"
+    case Waiting:
+        return "Waiting"
     default:
         return "Unknown"
     }
