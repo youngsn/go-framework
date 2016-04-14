@@ -13,29 +13,29 @@ import (
 // Maybe package are used in every other packages.
 
 // system environment defines
-var (
-    Name                 string
-    Environment          string
-    StartTime            time.Time
-    SysPath              string                                 // system base path
-    RunPath              string                                 // system run path
+const APP_NAME    = "veronica"
+const APP_VERSION = "1.5.0"
 
-    LoggerFactory        map[string]seelog.LoggerInterface      // logger instance factory
-    Config               ConfigStruct                           // parsed Config structer
+var (
+    Environment   string
+    StartTime     time.Time
+    SysPath       string                                 // system base path
+    RunPath       string                                 // system run path
+
+    LoggerFactory map[string]seelog.LoggerInterface      // logger instance factory
+    Config        ConfigStruct                           // parsed Config structer
 )
 
-// Project consts here
+// Project consts here.
 var (
-    DemoQueue            chan int
+    DemoQueue     chan int
 )
-
 
 // All constant defines are below.
 // System consts defines.
 const (
     DefaultSleepDur time.Duration = 100 * time.Microsecond      // select default sleep time
 )
-
 
 // System module signal defines.
 // You can add more own SIGNALs for modules.
@@ -63,7 +63,7 @@ func (s SIGNAL) String() string {
 // Module running status.
 type RState int
 const (
-    Running RState       = iota + 1
+    Running RState = iota + 1
     Stopped
     Waiting
 )
@@ -84,11 +84,10 @@ func (s RState) String() string {
 
 // Modules monitor log level defines.
 const (
-    MONITOR_INFO int     = iota + 1
+    MONITOR_INFO int = iota + 1
     MONITOR_WARN
     MONITOR_ERROR
     MONITOR_FATAL
 )
-
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

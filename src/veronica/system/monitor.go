@@ -9,34 +9,29 @@ import (
     "github.com/cihub/seelog"
 )
 
-
 type Monitor struct {
-    State           RState
-    saveQueue       chan *MonitorPack
+    State     RState
+    saveQueue chan *MonitorPack
 
-    timer           *time.Ticker
-    logger          seelog.LoggerInterface
+    timer     *time.Ticker
+    logger    seelog.LoggerInterface
 }
 
-
 func NewMonitor() *Monitor {
-    interval        := Config.Global.MonitorInterval
-    logger          := GetLogger("monitor")
-
+    interval   := Config.Global.MonitorInterval
+    logger     := GetLogger("monitor")
     return &Monitor{
-        State       : Stopped,
-        timer       : time.NewTicker(time.Second * time.Duration(interval)),
-        logger      : logger,
+        State  : Stopped,
+        timer  : time.NewTicker(time.Second * time.Duration(interval)),
+        logger : logger,
     }
 }
 
-
 func (this *Monitor) Start() {
-    this.State      = Running
+    this.State = Running
     go this.run()
     seelog.Infof("Monitor thread, started")
 }
-
 
 func (this *Monitor) run() {
     for this.State == Running {
@@ -54,12 +49,10 @@ func (this *Monitor) run() {
     }
 }
 
-
 func (this *Monitor) Stop() {
-    this.State       = Stopped
+    this.State = Stopped
     seelog.Infof("Monitor thread, stopped")
 }
-
 
 func (this *Monitor) modulesMonitor() {
     for moduleName, module := range SysManager.Modules {
@@ -82,10 +75,8 @@ func (this *Monitor) modulesMonitor() {
     }
 }
 
-
 // system monitors can set here
 func (this *Monitor) systemMonitor() {
 }
-
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

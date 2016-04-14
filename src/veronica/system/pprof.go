@@ -1,6 +1,5 @@
 package system
 
-
 // Pprof monitor.
 // Very useful when program is debugging
 // Be careful if use in production.
@@ -18,36 +17,30 @@ import(
 
 
 type PprofMonitor struct {
-    debug         bool
-    addr          string
+    debug     bool
+    addr      string
 }
-
 
 func NewPprofMonitor() *PprofMonitor {
-    debug        := Config.Global.PprofMode
-    addr         := Config.Global.PprofAddr
-
+    debug     := Config.Global.PprofMode
+    addr      := Config.Global.PprofAddr
     return &PprofMonitor{
-        debug    : debug,
-        addr     : addr,
+        debug : debug,
+        addr  : addr,
     }
 }
-
 
 // Pprof web. 
 func (this *PprofMonitor) WebPprofMonitor() {
-    if this.debug == false {
-        Log.Infof("Not Debug mode, PprofMonitor not started")
+    if this.debug == false {    // Debug mode will not start pprof.
         return
     }
-
     go func(){
-        Log.Warnf("Start Web PprofMonitor")
+        Log.Warnf("Debug mode, Start Web PprofMonitor")
         if err := http.ListenAndServe(this.addr, nil); err != nil {
             Log.Errorf(err.Error())
         }
     }()
 }
-
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

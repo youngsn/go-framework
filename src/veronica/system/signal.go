@@ -19,19 +19,16 @@ import (
 
 
 type Signal struct {
-    signalChan       chan os.Signal
+    signalChan chan os.Signal
 }
-
 
 func NewSignal() *Signal {
-    signalChan       := make(chan os.Signal)
+    signalChan     := make(chan os.Signal)
     signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)  // 监听interrupt & kill
-
     return &Signal{
-        signalChan   : signalChan,
+        signalChan : signalChan,
     }
 }
-
 
 func (this *Signal) Start() {
     Log.Infof("System start success")
@@ -43,10 +40,8 @@ func (this *Signal) Start() {
             Log.Infof("System stop success, byebye~")
             return
         }
-
         time.Sleep(DefaultSleepDur)
     }
 }
-
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

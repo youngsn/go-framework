@@ -1,0 +1,80 @@
+environment: "development"
+
+# global defines
+global:
+    processors       : 1
+    channel_size     : 10240
+    monitor_interval : 30        # monitor interval, unit : second
+    pprof_mode       : true
+    pprof_addr       : "0.0.0.0:2234"
+
+tickers:
+    demoDoing : 10
+
+demo:
+    test    : "demo"
+    threads : 3
+
+# databases
+databases:         # database connection config
+    demo:
+        host     : "127.0.0.1"
+        port     : 3306
+        user     : "root"
+        password : "demo"
+        db_name  : "demo"
+        log_mode : true
+
+    demo2:
+        host     : "127.0.0.2"
+        port     : 3306
+        user     : "root"
+        password : "demo2"
+        db_name  : "demo2"
+        log_mode : false
+
+# redis
+redis:
+    demo:
+        host         : "127.0.0.1:6379"
+        db           : 1
+        password     : "asdfsdf"
+        max_idle     : 3
+        idle_timeout : 2
+
+logger:
+    default: >
+        <seelog type="sync" minlevel="debug">
+            <outputs formatid="main">
+                <console/>
+                <rollingfile type="size" filename="logs/main.log" maxsize="1024000000" maxrolls="10"/>
+                <filter levels="error">
+                     <file path="logs/main.err.log"/>
+                </filter>
+            </outputs>
+            <formats>
+                <format id="main" format="[%Date %Time] [%LEVEL] [%Func: %Line] %Msg%n"/>
+            </formats>
+        </seelog>
+
+    monitor: >
+        <seelog type="sync" minlevel="debug">
+            <outputs formatid="main">
+                <console/>
+                <rollingfile type="size" filename="logs/monitor.log" maxsize="102400000" maxrolls="5"/>
+            </outputs>
+            <formats>
+                <format id="main" format="[%Date %Time] [%LEVEL] %Msg%n"/>
+            </formats>
+        </seelog>
+
+    demo: >
+        <seelog type="sync" minlevel="debug">
+            <outputs formatid="main">
+                <console/>
+                <rollingfile type="size" filename="logs/demo.log" maxsize="1024000000" maxrolls="10"/>
+            </outputs>
+            <formats>
+                <format id="main" format="[%Date %Time] [%LEVEL] [%Func: %Line] %Msg%n"/>
+            </formats>
+        </seelog>

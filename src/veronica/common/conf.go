@@ -1,64 +1,53 @@
 package common
 
 
-// This is toml config file mapping, map to ect/conf.toml.
-// We used "github.com/BurntSushi/toml" to parse toml files.
+// This is yaml config file mapping, map to ect/conf.ENVIRONMENT.yaml.
+// We used "gopkg.in/yaml.v2" to parse yaml files.
 // You should add your own Config into this.
 // You can also change config parsers if you wish to. ~_~
-// @author tangyang
+//
+// @AUTHOR tangyang
 import(
 )
 
 
 type ConfigStruct struct {
-    Name             string
     Environment      string
 
     Global           GlobalConf
     Demo             DemoConf
 
-    Tickers          map[string]TickerConf
-    Databases        map[string]DatabaseConf
-    Redis            map[string]RedisConf
-    Logger           map[string]LoggerConf
+    Tickers          map[string]int64
+    Logger           map[string]string
+    Databases map[string]struct {
+        Host         string
+        Port         int
+        User         string
+        Password     string
+        DbName       string     `yaml:"db_name"`
+        LogMode      bool       `yaml:"log_mode"`
+    }
+    Redis map[string]struct {
+        Host         string
+        Db           int
+        Password     string
+        MaxIdle      int        `yaml:"max_idle"`
+        IdleTimeout  int        `yaml:"idle_timeout"`
+    }
 }
 
 type GlobalConf struct {
-    MaxProcs         int
-    MaxChannelSize   int64
-    MonitorInterval  int64
+    Processors       int
+    MaxChannelSize   int        `yaml:"channel_size"`
+    MonitorInterval  int        `yaml:"monitor_interval"`
 
-    PprofMode        bool
-    PprofAddr        string
+    PprofMode        bool       `yaml:"pprof_mode"`
+    PprofAddr        string     `yaml:"pprof_addr"`
 }
 
 type DemoConf struct {
     Threads          int
     Test             string
 }
-
-type TickerConf struct {
-    Interval         int64
-}
-
-type DatabaseConf struct {
-    Host             string
-    Port             int
-    User             string
-    Password         string
-    DbName           string
-    LogMode          bool
-}
-
-type RedisConf struct {
-    Host             string
-    DbName           int
-    Password         string
-}
-
-type LoggerConf struct {
-    Conf             string
-}
-
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

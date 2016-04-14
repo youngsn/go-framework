@@ -35,15 +35,13 @@ type TimerTask struct {
     minInterval   int64
 }
 
-
 func NewTimerTask() *TimerTask {
     return &TimerTask{
-        tickerTask   : []*TickerTask{},
-        State        : Stopped,
-        minInterval  : 10,
+        tickerTask  : []*TickerTask{},
+        State       : Stopped,
+        minInterval : 10,
     }
 }
-
 
 // Start TriggerTasks instance.
 // NOTICE: All task are started by goroutine.
@@ -58,11 +56,11 @@ func (this *TimerTask) Start() {
                 case t := <-task.Tk.C:
                     Log.Infof("Ticker task %s @(%s)", task.Name, t.Format("2006-01-02 15:04:05"))
 
-                    s              := time.Now().UnixNano()
+                    s     := time.Now().UnixNano()
                     task.TickerHd()
-                    e              := time.Now().UnixNano()
+                    e     := time.Now().UnixNano()
 
-                    usage          := strconv.FormatFloat(float64((e - s) / 1000000), 'f', 2, 32)
+                    usage := strconv.FormatFloat(float64((e - s) / 1000000), 'f', 2, 32)
                     Log.Infof("Task %s finished, time: %s ms", task.Name, usage)
                 default:
                     time.Sleep(DefaultSleepDur)
@@ -70,33 +68,29 @@ func (this *TimerTask) Start() {
             }
         }(task)
     }
-
     Log.Infof("Tricker Thread, start")
 }
-
 
 // Init ticker tasks from config file.
 // Task handler are all from trigger_handler.go.
 func (this *TimerTask) initTickerTask() {
-    for name, ticker := range Config.Tickers {
-        handler      := getTickerHandler(name)          // get task handler
-        if ticker.Interval < this.minInterval {
+    for name, interval := range Config.Tickers {
+        handler        := getTickerHandler(name)          // get task handler
+        if interval < this.minInterval {
             panic(fmt.Sprintf("Task %s, interval must large %ds", name, this.minInterval))
         }
-        tk           := time.NewTicker(time.Second * time.Duration(ticker.Interval))
+        tk := time.NewTicker(time.Second * time.Duration(interval))
 
-        t            := &TickerTask{
-            Name      : name,
-            Status    : false,
-            Tk        : tk,
-            TickerHd  : handler,
+        t  := &TickerTask{
+            Name     : name,
+            Status   : false,
+            Tk       : tk,
+            TickerHd : handler,
         }
-
-        this.tickerTask     = append(this.tickerTask, t)
-        Log.Infof("Regist ticker task: %s, interval: %ds", name, ticker.Interval)
+        this.tickerTask = append(this.tickerTask, t)
+        Log.Infof("Regist ticker task: %s, interval: %ds", name, interval)
     }
 }
-
 
 // Stop all tasks.
 func (this *TimerTask) Stop() {
@@ -104,9 +98,7 @@ func (this *TimerTask) Stop() {
     for _,  task := range this.tickerTask {
         task.Tk.Stop()
     }
-
     Log.Infof("Tricker thread, stopped")
 }
-
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

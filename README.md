@@ -30,7 +30,7 @@ $ ./script/init.sh $proj_name
 
 ``` shell
 $ ./script/build.sh
-$ ./bin/$proj -c conf/conf.development.toml
+$ ./bin/$proj -c conf/conf.development.yml
 ```
 
 ## Components
@@ -40,26 +40,29 @@ $ ./bin/$proj -c conf/conf.development.toml
 components: 
 - log engine (seelog)
 - MySQL orm library (gorm)
-- config parser (toml)
+- config parser (changed from toml to yaml)
 - module manager (provides effective way to control each module)
 - pprof (golang performance monitor)
 - monitor interface (monitor module status)
 - ticker tasks (run task interval)
+- cli
 
 code specification:
 - module implements (use interface)
 - ticker task implements (use config &amp; handler)
 - project consts defines
 - code specifications
+- cli support
 
 ## Third packages
 
 veronica also uses some fantastic third packages, thanks very much to these authors.
 
 - [seelog log engine](https://github.com/cihub/seelog) master
-- [toml config parser](https://github.com/BurntSushi/toml) master
+- [yaml config parser](https://github.com/go-yaml/yaml) v2, changed from toml to yaml.
 - [MySQL driver](https://github.com/go-sql-driver/mysql) master
 - [gorm orm lib](https://github.com/jinzhu/gorm) master
+- [cli lib](https://github.com/codegangsta/cli) master
 
 ## TODO
 
