@@ -1,29 +1,17 @@
 package common
 
-// All tool funcs belongs here.
+// All util functions are here.
 // @author tangyang
-
 import (
     "os"
     "fmt"
     "syscall"
     "strconv"
-
-    "github.com/cihub/seelog"
 )
-
-// Get seelog instance according to module name.
-func GetLogger(name string) seelog.LoggerInterface {
-    if logInstance, ok := LoggerFactory[name]; ok {
-        return logInstance
-    } else {
-        panic(fmt.Sprintf("logger %s not exist", name))
-    }
-}
 
 // If filepath exists, will auto create one if not exist.
 func FilePathExist(path string) error {
-    if _, err  := os.Stat(path); os.IsNotExist(err) {
+    if _, err := os.Stat(path); os.IsNotExist(err) {
         if err := os.Mkdir(path, 0775); err != nil {
             return err
         }
@@ -33,7 +21,7 @@ func FilePathExist(path string) error {
 
 // Write main pid into pidfile.
 func WritePid() error {
-    pidFile := RunPath + "run.pid"      // pid
+    pidFile := RunPath + "/" + APP_NAME + ".pid"
     pid     := os.Getpid()
     fd, err := os.OpenFile(pidFile, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     defer fd.Close()
@@ -47,7 +35,7 @@ func WritePid() error {
 
 // Unlink pid file
 func UnlinkPid() {
-    pidFile := RunPath + "run.pid"      // pid
+    pidFile := RunPath + "/" + APP_NAME + ".pid"
     syscall.Unlink(pidFile)
 }
 

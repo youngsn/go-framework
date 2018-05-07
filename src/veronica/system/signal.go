@@ -4,43 +4,39 @@ package system
 // System Signal capture & handle.
 // Also Signal will run in main thread util program stopped.
 // @AUTHOR tangyang
-
 import (
-    // "fmt"
     "os"
     "time"
     "os/signal"
     "syscall"
 
-    . "veronica/common"
-
-    Log "github.com/cihub/seelog"
+    c "veronica/common"
 )
-
 
 type Signal struct {
     signalChan chan os.Signal
 }
 
 func NewSignal() *Signal {
-    signalChan     := make(chan os.Signal)
-    signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)  // 监听interrupt & kill
+    signalChan := make(chan os.Signal)
+    signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)      // listen interrupt & kill
     return &Signal{
         signalChan : signalChan,
     }
 }
 
-func (this *Signal) Start() {
-    Log.Infof("System start success")
+func (s *Signal) Start() {
     for {
-        signal    := <-this.signalChan
+        signal   := <-s.signalChan
         if signal == syscall.SIGINT || signal == syscall.SIGTERM {  // stop signal
-            Log.Infof("Received signal %v, stop programs", signal)
-            SysManager.StopModules()                                // stop模块
-            Log.Infof("System stop success, byebye~")
+            c.Logger.WithFields(c.LogFields{
+                "SIGNAL" : signal,
+            }).Info("receive stop signal")
+            SysManager.StopModules()                                // stop module
+            c.Logger.Info("stopped, byebye~")
             return
         }
-        time.Sleep(DefaultSleepDur)
+        time.Sleep(c.DefaultSleepDur)
     }
 }
 

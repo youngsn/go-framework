@@ -5,40 +5,39 @@ package system
 // Be careful if use in production.
 // You can config start it or not in config file.
 // @AUTHOR tangyang
-
-import(
+import (
     "net/http"
     _ "net/http/pprof"
-
-    . "veronica/common"
-
-    Log "github.com/cihub/seelog"
+    c "veronica/common"
 )
 
-
 type PprofMonitor struct {
-    debug     bool
-    addr      string
+    debug  int
+    remote string
 }
 
-func NewPprofMonitor() *PprofMonitor {
-    debug     := Config.Global.PprofMode
-    addr      := Config.Global.PprofAddr
+func NewPprof() *PprofMonitor {
+    debug  := c.Config.Debug.Debug
+    remote := c.Config.Debug.Remote
     return &PprofMonitor{
-        debug : debug,
-        addr  : addr,
+        debug  : debug,
+        remote : remote,
     }
 }
 
 // Pprof web. 
-func (this *PprofMonitor) WebPprofMonitor() {
-    if this.debug == false {    // Debug mode will not start pprof.
+func (p *PprofMonitor) WebMonitor() {
+    if p.debug == 0 {           // debug mode will not start pprof
         return
     }
-    go func(){
-        Log.Warnf("Debug mode, Start Web PprofMonitor")
-        if err := http.ListenAndServe(this.addr, nil); err != nil {
-            Log.Errorf(err.Error())
+
+    go func() {
+        c.Logger.WithFields(c.LogFields{
+            "addr" : p.remote,
+        }).Info("start debug mode")
+
+        if err := http.ListenAndServe(p.remote, nil); err != nil {
+            c.Logger.Fatalf(err.Error())
         }
     }()
 }

@@ -1,7 +1,7 @@
 package system
 
 
-// Program & global params are inits here.
+// app & global vals init here.
 import (
     "os"
     "fmt"
@@ -13,14 +13,12 @@ import (
 
     "gopkg.in/yaml.v2"
     "github.com/codegangsta/cli"
-    Log "github.com/cihub/seelog"
 )
-
 
 // system control global vars
 var (
-    SysPprofMonitor *PprofMonitor       // pprof var
-    SysManager      *ModuleManager      // module manage
+    SysPprof   *PprofMonitor       // pprof monitor
+    SysManager *ModuleManager      // module manage
 )
 
 func InitApp() *cli.App {
@@ -28,7 +26,7 @@ func InitApp() *cli.App {
         cli.StringFlag{
             Name  : "config, c",
             Value : "",
-            Usage : "app yaml config file",
+            Usage : "app yaml config filepath",
         },
     }
 
@@ -36,10 +34,10 @@ func InitApp() *cli.App {
     app        := cli.NewApp()
     app.Name    = c.APP_NAME
     app.Version = c.APP_VERSION
-    app.Usage   = fmt.Sprintf("Run %s service", c.APP_NAME)
+    app.Usage   = fmt.Sprintf("Run app %s", c.APP_NAME)
     app.Flags   = cmdFlag
     app.Before  = func(c *cli.Context) error {   // Parse cmd params
-        return parseParams(c)
+        return parseConfig(c)
     }
     app.After   = func(c *cli.Context) error {   // If has exec errors, return
         if err != nil {             // run failed, we need panic
@@ -47,17 +45,18 @@ func InitApp() *cli.App {
         }
         return err
     }
-    app.Action  = func(c *cli.Context) {         // Run apps 
+    app.Action  = func(c *cli.Context) {         // Run apps
         err     = appRun()
     }
     return app
 }
 
-// Parse cmd params & do param handle.
-func parseParams(context *cli.Context) error {
-    cfgFile    := context.String("config")
+// Parse cmd params and get yml config filepath
+// Then pase config file
+func parseConfig(context *cli.Context) error {
+    cfgFile   := context.String("config")
     if cfgFile == "" {
-        return fmt.Errorf("no config file found, please specify")
+        return fmt.Errorf("no config file exist, please check filepath")
     }
 
     config    := c.ConfigStruct{}
@@ -81,79 +80,59 @@ func appRun() error {
         return err
     }
 
-    processors := c.Config.Global.Processors
-    runtime.GOMAXPROCS(processors)
-
-    SysPprofMonitor.WebPprofMonitor()                  // pprof monitor
-    if err := SysManager.StartModules(); err != nil {  // start modules
+    worker := c.Config.Worker       // worker num
+    runtime.GOMAXPROCS(worker)
+    SysPprof.WebMonitor()           // pprof monitor
+    if err := SysManager.StartModules(); err != nil {     // start app modules
         return err
     }
-
-    sysSignal := NewSignal()                           // system signal capture
-    sysSignal.Start()
-
+    c.Logger.Info("app start success")
+    NewSignal().Start()             // signal capture
     c.UnlinkPid()
     return nil
 }
 
-// Init app data. 
+// Init app data.
 func appInit() error {
     // init common package global vars
-    sysPath, _   := os.Getwd()
-    c.Environment = c.Config.Environment
-    c.SysPath     = sysPath + "/"
-    c.RunPath     = sysPath + "/run/"
+    sysPath, _ := os.Getwd()
+    c.Environ   = c.Config.Environ
+    c.SysPath   = sysPath
+    c.RunPath   = sysPath + "/var"
+    c.DataPath  = sysPath + "/data"
     if err := c.FilePathExist(c.RunPath); err != nil {
         return err
     }
-    if err := loggerInit(); err != nil {            // init log engine
+    if err := c.FilePathExist(c.DataPath); err != nil {
+        return err
+    }
+    // init log engine
+    if err := loggerInit(); err != nil {
         return err
     }
 
-    Log.Infof("Bootstrap %s", c.APP_NAME)           // Program start here
-    SysPprofMonitor    = NewPprofMonitor()          // new pprof monitor
-    SysManager         = modulesInit()              // new module & module manager init
+    // start app
+    c.Logger.Infof("bootstrap %s, worker %d", c.APP_NAME, c.Config.Worker)
+    SysPprof   = NewPprof()             // new pprof monitor
+    SysManager = initModules()          // new module & module manager init
 
-    // chan init
-    maxSize           := c.Config.Global.MaxChannelSize
-    c.DemoQueue        = make(chan int, maxSize)
-
+    // init channel
+    maxChanSize := c.Config.ChanSize
+    c.DemoQueue  = make(chan int, maxChanSize)
     return nil
 }
 
 // Init custome modules here.
-func modulesInit() *ModuleManager {
+func initModules() *ModuleManager {
     m := NewModuleManager()
-    m.InitModule("Demo", demo.NewDManager())
+    m.InitModule("Demo", demo.NewDispatcher())
     return m
 }
 
-// Init log engine instance.
-// All defined loggers are init into LoggerFactory at once.
-// Maybe goroutine used different instances.
-// Log "github.com/cihub/seelog" used default config.
+// Init global log engine instance.
 func loggerInit() error {
-    if err := initLoggerFactory(); err != nil {
-        return err
-    }
-
-    Log.ReplaceLogger(c.GetLogger("default"))       // default logger
-    demo.Log = c.GetLogger("demo")
-
-    return nil
-}
-
-// Init logger factory.
-func initLoggerFactory() error {
-    c.LoggerFactory         = map[string]Log.LoggerInterface{}
-    for loggerName, config := range c.Config.Logger {      // convert logger config to inst
-        if logInstance, err := Log.LoggerFromConfigAsString(config); err == nil {
-            c.LoggerFactory[loggerName] = logInstance
-        } else {
-            return err
-        }
-    }
-
+    flag    := "app"
+    c.Logger = c.NewLog(flag)
     return nil
 }
 

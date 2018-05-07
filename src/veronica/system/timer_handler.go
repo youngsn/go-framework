@@ -3,16 +3,12 @@ package system
 
 // Trigger task handler defines.
 // @AUTHOR tangyang
-
 import (
     "fmt"
     "math/rand"
 
-    . "veronica/common"
-
-    Log "github.com/cihub/seelog"
+    c "veronica/common"
 )
-
 
 type TickerHandler func()
 
@@ -21,7 +17,7 @@ func getTickerHandler(tickerName string) TickerHandler {
     var handler TickerHandler
     switch {
     case tickerName == "demoDoing":             // THIS IS JUST DEMO
-        handler      = demoDoing
+        handler = demoDoing
     default:
         panic(fmt.Sprint("No right handler to TimerTask: ", tickerName))
     }
@@ -31,9 +27,8 @@ func getTickerHandler(tickerName string) TickerHandler {
 // THIS IS JUST demo handler func.
 func demoDoing() {
     num := rand.Intn(100)
-    Log.Infof("Send %d to DemoQueue", num)
-    DemoQueue<- num
-    Log.Infof("Send success")
+    c.Logger.Infof("Send %d to DemoQueue", num)
+    c.DemoQueue<- num
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

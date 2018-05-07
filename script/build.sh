@@ -5,4 +5,8 @@
 
 ROOT=$(cd `dirname $0`; cd ..; pwd)
 NAME=${ROOT##*/}
-go build -o $ROOT/bin/$NAME -v -n -x $ROOT/src/$NAME/main.go
+
+# build sh must use vendor package
+export GOPATH=$ROOT:$ROOT/vendor
+
+go build -o $ROOT/bin/$NAME -v -x $ROOT/src/$NAME/main.go

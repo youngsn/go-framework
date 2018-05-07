@@ -3,8 +3,6 @@ package common
 
 import (
     "time"
-
-    "github.com/cihub/seelog"
 )
 
 
@@ -14,21 +12,21 @@ import (
 
 // system environment defines
 const APP_NAME    = "veronica"
-const APP_VERSION = "1.5.0"
+const APP_VERSION = "1.8.0"
 
 var (
-    Environment   string
-    StartTime     time.Time
-    SysPath       string                                 // system base path
-    RunPath       string                                 // system run path
-
-    LoggerFactory map[string]seelog.LoggerInterface      // logger instance factory
-    Config        ConfigStruct                           // parsed Config structer
+    Environ   string
+    StartTime time.Time
+    SysPath   string                // app base path
+    RunPath   string                // app run path
+    DataPath  string                // app data path
+    Config    ConfigStruct          // parsed Config structer
+    Logger    *Log                  // log engine
 )
 
 // Project consts here.
 var (
-    DemoQueue     chan int
+    DemoQueue chan int
 )
 
 // All constant defines are below.
@@ -41,7 +39,7 @@ const (
 // You can add more own SIGNALs for modules.
 type SIGNAL int
 const (
-    SIGSTART SIGNAL  = iota + 1
+    SIGSTART SIGNAL = iota + 1
     SIGSTOP
     SIGRELOAD
 )
@@ -58,7 +56,6 @@ func (s SIGNAL) String() string {
         return "unknown"
     }
 }
-
 
 // Module running status.
 type RState int
@@ -81,13 +78,12 @@ func (s RState) String() string {
     }
 }
 
-
 // Modules monitor log level defines.
 const (
     MONITOR_INFO int = iota + 1
-    MONITOR_WARN
     MONITOR_ERROR
     MONITOR_FATAL
+    MONITOR_PANIC
 )
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

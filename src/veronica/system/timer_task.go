@@ -13,92 +13,93 @@ import (
     "time"
     "strconv"
 
-    . "veronica/common"
-
-    Log "github.com/cihub/seelog"
+    c "veronica/common"
 )
 
 
 // One TickerTask struct
 type TickerTask struct {
-    Name          string            // taskname
-    Status        bool              // running status
-    Tk            *time.Ticker      // task ticker
-    TickerHd      TickerHandler     // task handler fuc
+    Name     string            // taskname
+    Status   bool              // running status
+    Tk       *time.Ticker      // task ticker
+    TickerHd TickerHandler     // task handler fuc
 }
 
 
 type TimerTask struct {
-    State         RState
-
-    tickerTask    []*TickerTask             // task list
-    minInterval   int64
+    State       c.RState
+    tickerTask  []*TickerTask             // task list
+    minInterval int64
 }
 
 func NewTimerTask() *TimerTask {
     return &TimerTask{
         tickerTask  : []*TickerTask{},
-        State       : Stopped,
+        State       : c.Stopped,
         minInterval : 10,
     }
 }
 
 // Start TriggerTasks instance.
 // NOTICE: All task are started by goroutine.
-func (this *TimerTask) Start() {
-    this.initTickerTask()                   // init timer tickers
+func (t *TimerTask) Start() {
+    t.initTickerTask()                   // init timer tickers
 
-    this.State   = Running
-    for _, task := range this.tickerTask {
+    t.State = c.Running
+    for _, task := range t.tickerTask {
         go func(task *TickerTask) {         // start by goroutine
-            for this.State == Running {
+            for t.State == c.Running {
                 select {
                 case t := <-task.Tk.C:
-                    Log.Infof("Ticker task %s @(%s)", task.Name, t.Format("2006-01-02 15:04:05"))
-
-                    s     := time.Now().UnixNano()
+                    s  := time.Now().UnixNano()
                     task.TickerHd()
-                    e     := time.Now().UnixNano()
-
+                    e  := time.Now().UnixNano()
                     usage := strconv.FormatFloat(float64((e - s) / 1000000), 'f', 2, 32)
-                    Log.Infof("Task %s finished, time: %s ms", task.Name, usage)
+
+                    c.Logger.WithFields(c.LogFields{
+                        "exTime" : t.Format("2006-01-02 15:04:05"),
+                        "usage"  : usage,
+                        "taskName" : task.Name,
+                    }).Info("task exec success")
                 default:
-                    time.Sleep(DefaultSleepDur)
+                    time.Sleep(c.DefaultSleepDur)
                 }
             }
         }(task)
     }
-    Log.Infof("Tricker Thread, start")
+    c.Logger.Info("tricker, start success")
 }
 
 // Init ticker tasks from config file.
 // Task handler are all from trigger_handler.go.
-func (this *TimerTask) initTickerTask() {
-    for name, interval := range Config.Tickers {
-        handler        := getTickerHandler(name)          // get task handler
-        if interval < this.minInterval {
-            panic(fmt.Sprintf("Task %s, interval must large %ds", name, this.minInterval))
+func (t *TimerTask) initTickerTask() {
+    for name, interval := range c.Config.Tickers {
+        handler := getTickerHandler(name)               // get task handler
+        if interval < t.minInterval {
+            panic(fmt.Sprintf("%s, interval must large %ds", name, t.minInterval))
         }
-        tk := time.NewTicker(time.Second * time.Duration(interval))
 
-        t  := &TickerTask{
+        task := &TickerTask{
             Name     : name,
             Status   : false,
-            Tk       : tk,
+            Tk       : time.NewTicker(time.Second * time.Duration(interval)),
             TickerHd : handler,
         }
-        this.tickerTask = append(this.tickerTask, t)
-        Log.Infof("Regist ticker task: %s, interval: %ds", name, interval)
+        t.tickerTask = append(t.tickerTask, task)
+        c.Logger.WithFields(c.LogFields{
+            "taskName" : name,
+            "interval" : interval,
+        }).Info("regist task success")
     }
 }
 
 // Stop all tasks.
-func (this *TimerTask) Stop() {
-    this.State    = Stopped
-    for _,  task := range this.tickerTask {
+func (t *TimerTask) Stop() {
+    t.State = c.Stopped
+    for _,  task := range t.tickerTask {
         task.Tk.Stop()
     }
-    Log.Infof("Tricker thread, stopped")
+    c.Logger.Info("tricker, stop success")
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

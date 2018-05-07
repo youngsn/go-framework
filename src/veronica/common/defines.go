@@ -13,17 +13,16 @@ package common
 type Module interface {
     Status()  RState                  // module running status
     Monitor() []*MonitorPack          // stdout module status to monitor
-    Ctrl(s <-chan SIGNAL)             // main thread to send signal into module chan
+    Receive(s <-chan SIGNAL)          // main thread to send signal into module chan
 }
-
 
 // Monitor data structure.
 // StdLevel used to define monitor logging level.
 // Content is logging content.
 type MonitorPack struct {
-    StdLevel      int       // monitor level
-    Content       string    // monitor content
+    StdLevel int             // log level
+    Content  string          // log content
+    Fields   LogFields       // log fields
 }
-
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

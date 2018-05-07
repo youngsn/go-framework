@@ -1,75 +1,71 @@
 package system
 
-
 import (
     "time"
 
-    . "veronica/common"
-
-    "github.com/cihub/seelog"
+    c "veronica/common"
 )
 
 type Monitor struct {
-    State     RState
-    saveQueue chan *MonitorPack
-
-    timer     *time.Ticker
-    logger    seelog.LoggerInterface
+    State  c.RState
+    timer  *time.Ticker
+    logger *c.Log
 }
 
 func NewMonitor() *Monitor {
-    interval   := Config.Global.MonitorInterval
-    logger     := GetLogger("monitor")
+    interval := c.Config.Monitor.Interval
+    logger   := c.NewLog("monitor")
     return &Monitor{
-        State  : Stopped,
+        State  : c.Stopped,
         timer  : time.NewTicker(time.Second * time.Duration(interval)),
         logger : logger,
     }
 }
 
-func (this *Monitor) Start() {
-    this.State = Running
-    go this.run()
-    seelog.Infof("Monitor thread, started")
+func (m *Monitor) Start() {
+    m.State = c.Running
+    go m.run()
+    m.logger.WithFields(c.LogFields{
+        "moduleName" : "monitor",
+    }).Info("monitor start")
 }
 
-func (this *Monitor) run() {
-    for this.State == Running {
+func (m *Monitor) run() {
+    for m.State == c.Running {
         select {
-        case <-this.timer.C:
-            this.logger.Infof("Program status @%s", time.Now().Format("2006-01-02 15:04:05"))
-            this.logger.Infof("System:")
-            this.systemMonitor()
+        case <-m.timer.C:
+            m.logger.Info("system")
+            m.systemMonitor()
 
-            this.logger.Infof("Modules:")
-            this.modulesMonitor()
+            m.logger.Info("module")
+            m.modulesMonitor()
         default:
-            time.Sleep(DefaultSleepDur)
+            time.Sleep(c.DefaultSleepDur)
         }
     }
 }
 
-func (this *Monitor) Stop() {
-    this.State = Stopped
-    seelog.Infof("Monitor thread, stopped")
+func (m *Monitor) Stop() {
+    m.State = c.Stopped
+    m.logger.WithFields(c.LogFields{
+        "moduleName" : "monitor",
+    }).Infof("monitor stopped")
 }
 
-func (this *Monitor) modulesMonitor() {
-    for moduleName, module := range SysManager.Modules {
-        this.logger.Infof("%s Status:", moduleName)
-
-        monitorPacks       := module.Monitor()
-        for _, monitorPack := range monitorPacks {
-            if monitorPack.StdLevel == MONITOR_INFO {
-                this.logger.Infof(monitorPack.Content)
-            } else if monitorPack.StdLevel == MONITOR_WARN {
-                this.logger.Warnf(monitorPack.Content)
-            } else if monitorPack.StdLevel == MONITOR_ERROR {
-                this.logger.Errorf(monitorPack.Content)
-            } else if monitorPack.StdLevel == MONITOR_FATAL {
-                this.logger.Criticalf(monitorPack.Content)
+func (m *Monitor) modulesMonitor() {
+    for _, module := range SysManager.Modules {
+        monitorPacks := module.Monitor()
+        for _, mpack := range monitorPacks {
+            if mpack.StdLevel == c.MONITOR_INFO {
+                m.logger.WithFields(mpack.Fields).Info(mpack.Content)
+            } else if mpack.StdLevel == c.MONITOR_ERROR {
+                m.logger.WithFields(mpack.Fields).Error(mpack.Content)
+            } else if mpack.StdLevel == c.MONITOR_FATAL {
+                m.logger.WithFields(mpack.Fields).Fatal(mpack.Content)
+            } else if mpack.StdLevel == c.MONITOR_PANIC {
+                m.logger.WithFields(mpack.Fields).Panic(mpack.Content)
             } else {
-                this.logger.Infof(monitorPack.Content)
+                m.logger.WithFields(mpack.Fields).Info(mpack.Content)
             }
         }
     }
