@@ -12,31 +12,32 @@ import (
 )
 
 type PprofMonitor struct {
-    debug  int
-    remote string
+    debug int
+    addr  string
 }
 
 func NewPprof() *PprofMonitor {
-    debug  := c.Config.Debug.Debug
-    remote := c.Config.Debug.Remote
+    debug := c.Config.Debug.Debug
+    addr  := c.Config.Debug.Addr
     return &PprofMonitor{
-        debug  : debug,
-        remote : remote,
+        debug : debug,
+        addr  : addr,
     }
 }
 
-// Pprof web. 
+// Pprof web monitor
 func (p *PprofMonitor) WebMonitor() {
     if p.debug == 0 {           // debug mode will not start pprof
+        c.Logger.Infof("pprof debug, off")
         return
     }
 
     go func() {
         c.Logger.WithFields(c.LogFields{
-            "addr" : p.remote,
-        }).Info("start debug mode")
+            "addr" : p.addr,
+        }).Debugf("pprof debug, start work")
 
-        if err := http.ListenAndServe(p.remote, nil); err != nil {
+        if err := http.ListenAndServe(p.addr, nil); err != nil {
             c.Logger.Fatalf(err.Error())
         }
     }()

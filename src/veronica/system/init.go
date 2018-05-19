@@ -59,7 +59,7 @@ func parseConfig(context *cli.Context) error {
         return fmt.Errorf("no config file exist, please check filepath")
     }
 
-    config    := c.ConfigStruct{}
+    var config c.AppConfig
     if c, err := ioutil.ReadFile(cfgFile); err != nil {
         return err
     } else {
@@ -83,10 +83,10 @@ func appRun() error {
     worker := c.Config.Worker       // worker num
     runtime.GOMAXPROCS(worker)
     SysPprof.WebMonitor()           // pprof monitor
-    if err := SysManager.StartModules(); err != nil {     // start app modules
+    if err := SysManager.Start(); err != nil {     // start app modules
         return err
     }
-    c.Logger.Info("app start success")
+    c.Logger.Infof("app start success")
     NewSignal().Start()             // signal capture
     c.UnlinkPid()
     return nil
@@ -125,7 +125,7 @@ func appInit() error {
 // Init custome modules here.
 func initModules() *ModuleManager {
     m := NewModuleManager()
-    m.InitModule("Demo", demo.NewDispatcher())
+    m.Init("Demo", demo.NewDispatcher())
     return m
 }
 

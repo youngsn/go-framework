@@ -12,7 +12,7 @@ import (
 
 // system environment defines
 const APP_NAME    = "veronica"
-const APP_VERSION = "1.8.0"
+const APP_VERSION = "2.0.0"
 
 var (
     Environ   string
@@ -20,11 +20,12 @@ var (
     SysPath   string                // app base path
     RunPath   string                // app run path
     DataPath  string                // app data path
-    Config    ConfigStruct          // parsed Config structer
+    Config    AppConfig             // app global config
     Logger    *Log                  // log engine
+    NameCli   *NameClient           // naming client
 )
 
-// Project consts here.
+// Project channels, THIS IS JUST DEMO.
 var (
     DemoQueue chan int
 )
@@ -82,8 +83,6 @@ func (s RState) String() string {
 const (
     MONITOR_INFO int = iota + 1
     MONITOR_ERROR
-    MONITOR_FATAL
-    MONITOR_PANIC
 )
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

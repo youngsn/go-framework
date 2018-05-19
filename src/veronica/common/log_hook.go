@@ -34,12 +34,12 @@ func (hook contextHook) Fire(entry *logrus.Entry) error {
 
 // find source file & func caller
 func findCaller() string {
-    skip := 5
+    skip := 7
     file := ""
     line := 0
     for i := 0; i < 10; i++ {
         file, line = getCaller(skip + i)
-        if strings.Contains(file, "sirupsen") == false {
+        if strings.Contains(file, "sirupsen") == false && strings.Contains(file, "common/log.go") == false {
             break
         }
     }

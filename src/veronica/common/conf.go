@@ -7,64 +7,53 @@ package common
 //
 // @AUTHOR tangyang
 
-type ConfigStruct struct {
+type AppConfig struct {
     Environ  string
     Worker   int
     ChanSize int            `yaml:"max_chan_size"`
-    Log      LogDef
-    Debug    DebugDef
-    Monitor  MonitorDef
-    Demo     DemoDef
-
-    Tickers   map[string]int64
-    /*database config*/
-    Databases map[string]struct {
-        Host     string
-        Port     int
-        User     string
-        Password string
-        DbName   string     `yaml:"db_name"`
-        LogMode  bool       `yaml:"log_mode"`
+    Debug    struct {Debug int; Addr string}
+    Monitor  struct {Interval int}
+    Log      struct {
+        Rotate int
+        Level  int
+        Path   string
     }
-    /*redis config*/
-    Redis   map[string]struct {
-        Host        string
-        Db          int
-        Password    string
-        MaxIdle     int     `yaml:"max_idle"`
-        IdleTimeout int     `yaml:"idle_timeout"`
+    Tickers  map[string]int64
+    Service  struct {Local NameLocalDef}
+    DbClusters map[string]DbClusterDef
+    Redis    map[string]struct {
+        Db      int
+        Passwd  string
+        Service string
     }
+
+    Demo DemoDef
 }
 
-/**
- * debug def
- */
-type DebugDef struct {
-    Debug  int
-    Remote string
-}
-
-/**
- * monitor def
- */
-type MonitorDef struct {
-    Interval int
-}
-
-/**
- * log def
- */
-type LogDef struct {
-    Rotate int
-    Format int
-    Level  int
-    Path   string
-    IsTerminal int          `yaml:"is_terminal"`
+type DbClusterDef struct {
+    Host     string
+    Port     int
+    User     string
+    Password string
+    DbName   string     `yaml:"db_name"`
+    LogMode  bool       `yaml:"log_mode"`
 }
 
 type DemoDef struct {
     Threads int
     Test    string
+}
+
+type NameLocalDef map[string]struct {
+    Port         int            `yaml:"port"`
+    Retry        int            `yaml:"retry"`
+    ConnTimeout  int64          `yaml:"ctimeout"`
+    ReadTimeout  int64          `yaml:"rtimeout"`
+    WriteTimeout int64          `yaml:"wtimeout"`
+    Strategy     struct {
+        Balance  string
+    }
+    Servers      []Server
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

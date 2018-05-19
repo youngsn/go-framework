@@ -14,26 +14,26 @@ import (
 )
 
 type Signal struct {
-    signalChan chan os.Signal
+    ch chan os.Signal
 }
 
 func NewSignal() *Signal {
-    signalChan := make(chan os.Signal)
-    signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)      // listen interrupt & kill
+    ch := make(chan os.Signal)
+    signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)      // listen interrupt & kill
     return &Signal{
-        signalChan : signalChan,
+        ch : ch,
     }
 }
 
 func (s *Signal) Start() {
     for {
-        signal   := <-s.signalChan
+        signal   := <-s.ch
         if signal == syscall.SIGINT || signal == syscall.SIGTERM {  // stop signal
             c.Logger.WithFields(c.LogFields{
                 "SIGNAL" : signal,
-            }).Info("receive stop signal")
-            SysManager.StopModules()                                // stop module
-            c.Logger.Info("stopped, byebye~")
+            }).Infof("received signal, %s", signal)
+            SysManager.Stop()                                       // stop module
+            c.Logger.Infof("success, bye~")
             return
         }
         time.Sleep(c.DefaultSleepDur)

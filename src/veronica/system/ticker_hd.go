@@ -19,7 +19,7 @@ func getTickerHandler(tickerName string) TickerHandler {
     case tickerName == "demoDoing":             // THIS IS JUST DEMO
         handler = demoDoing
     default:
-        panic(fmt.Sprint("No right handler to TimerTask: ", tickerName))
+        panic(fmt.Sprintf("task: %s, no right handler", tickerName))
     }
     return handler
 }
@@ -27,7 +27,7 @@ func getTickerHandler(tickerName string) TickerHandler {
 // THIS IS JUST demo handler func.
 func demoDoing() {
     num := rand.Intn(100)
-    c.Logger.Infof("Send %d to DemoQueue", num)
+    c.Logger.Infof("send rand: %d to DemoQueue", num)
     c.DemoQueue<- num
 }
 

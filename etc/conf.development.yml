@@ -13,12 +13,10 @@ debug :
 # format: 1: text, 2: json
 # level:  1: debug 2: info 4: error 8: fatal 16: panic
 # path:   /path/to/log, config as you wish
-# is_terminal: wheather log to terminal, 0: no; 1: yes
 log :
   rotate : 1
   level  : 1
   path   : "log"
-  is_terminal : 1
 
 # monitor conf
 monitor :
@@ -30,7 +28,7 @@ tickers :
 
 demo :
   test    : "demo"
-  threads : 3
+  threads : 10
 
 # databases
 databases :         # database connection config
@@ -52,10 +50,24 @@ databases :         # database connection config
 # redis
 redis :
   demo :
-    host         : "127.0.0.1:6379"
-    db           : 1
-    password     : "asdfsdf"
-    max_idle     : 3
-    idle_timeout : 2
+    service : "redis-demo"
+    db      : 0
+    passwd  : ""
 
-# vim: set expandtab ts=2 sw=2 sts=4 tw=100: 
+# naming service
+service :
+  local :
+    redis-demo :
+      port  : 9200
+      retry : 0
+      ctimeout : 1820
+      rtimeout : 2000
+      wtimeout : 2000
+      strategy :
+        balance : 'Random'
+      servers :
+        - host : "127.0.0.1"
+          port : 8800
+        - host : "127.0.0.2"
+
+# vim: set expandtab ts=2 sw=2 sts=2 tw=100:

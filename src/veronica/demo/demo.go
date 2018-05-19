@@ -8,45 +8,24 @@ import (
     c "veronica/common"
 )
 
-
 type Dispatcher struct {
+    name       string
     threads    int
-    WorkerPool chan chan int        // use to get aviable workers
-    Workers    []*Worker            // use to save active worker instance
+    workers    []*worker            // use to save active worker instance
+    WorkerPool chan (chan int)      // use to get aviable workers
 }
 
 func NewDispatcher() *Dispatcher {
     pThreads := c.Config.Demo.Threads
     return &Dispatcher{
         threads    : pThreads,
-        WorkerPool : make(chan chan int, pThreads),
-        Workers    : []*Worker{},
+        workers    : []*worker{},
+        WorkerPool : make(chan (chan int), pThreads),
     }
 }
 
-// Get dispatcher running status.
-func (d *Dispatcher) Status() c.RState {
-    for _, worker := range d.Workers {
-        if worker.State == c.Running {
-            return c.Running
-        } else {
-            continue
-        }
-    }
-    return c.Stopped
-}
-
-// Get dispatcher monitor status.
-func (d *Dispatcher) Monitor() []*c.MonitorPack {
-    monitorStatus := []*c.MonitorPack{}
-    for _, worker := range d.Workers {
-        monitorStatus = append(monitorStatus, worker.ProcStatus())
-    }
-    return monitorStatus
-}
-
-// Send Signal to all managed goroutines.
-func (d *Dispatcher) Receive(m <-chan c.SIGNAL) {
+// Regist and listen to system signal
+func (d *Dispatcher) Init(m <-chan c.SIGNAL) {
     go func() {
         for {
             select {
@@ -56,88 +35,112 @@ func (d *Dispatcher) Receive(m <-chan c.SIGNAL) {
                 } else if signal == c.SIGSTOP {
                     d.stop()
                 }
-            default:
-                time.Sleep(c.DefaultSleepDur)
+            case <- time.After(c.DefaultSleepDur):
             }
         }
     }()
 }
 
-// Start running dispatcher.
+// Get dispatcher running status.
+func (d *Dispatcher) Status() c.RState {
+    for _, worker := range d.workers {
+        if worker.State == c.Running {
+            return c.Running
+        } else {
+            continue
+        }
+    }
+    return c.Stopped
+}
+
+// Get worker monitor status
+func (d *Dispatcher) Monitor() []*c.MonitorPack {
+    pk := []*c.MonitorPack{}
+    for _, worker := range d.workers {
+        pk = append(pk, worker.ProcStatus())
+    }
+    return pk
+}
+
+// Start running dispatcher
 func (d *Dispatcher) run() {
     for i := 0; i < d.threads; i++ {
         id     := i + 1
-        worker := NewWorker(id, d.WorkerPool)
+        worker := newWorker(id, d.WorkerPool)
         worker.Start()                            // start worker
-
-        d.Workers = append(d.Workers, worker)     // add worker instance to slice
+        d.workers = append(d.workers, worker)     // add worker instance to slice
     }
     go d.dispatch()
 }
 
-
+// work dispatch demo
 func (d *Dispatcher) dispatch() {
     for {
         select {
         case job := <-c.DemoQueue:
             go func(job int) {
                 // Try choose one worker to work, if no aviable worker, it will be blocked.
-                workerChan := <-d.WorkerPool
-                workerChan<- job        // add this job to this worker Chan
+                jobChan := <-d.WorkerPool
+                jobChan<- job        // add this job to this worker Chan
             }(job)
+        case <- time.After(c.DefaultSleepDur):
         }
     }
 }
 
 func (d *Dispatcher) stop() {
-    for _, worker := range d.Workers {
+    for _, worker := range d.workers {
         worker.Stop()
     }
 }
 
-type Worker struct {
-    Id         int
-    State      c.RState
-    WorkerPool chan chan int
-    JobChan    chan int
+
+type worker struct {
+    id       int
+    name     string
+    workPool chan (chan int)
+    JobChan  chan int
+    State    c.RState
 }
 
-func NewWorker(id int, workPool chan chan int) *Worker {
-    return &Worker{
-        Id         : id,
-        State      : c.Stopped,
-        WorkerPool : workPool,                 // pool chan to save worker job chan
-        JobChan    : make(chan int),           // receive task from outside world
+func newWorker(id int, workPool chan (chan int)) *worker {
+    moduleName := "Demo"
+    return &worker{
+        id       : id,
+        name     : moduleName,
+        workPool : workPool,               // pool chan to save worker job chan
+        JobChan  : make(chan int),         // receive task from outside world
+        State    : c.Stopped,
     }
 }
 
-func (w *Worker) Start() {
+func (w *worker) Start() {
     w.State = c.Running
     go w.run()
 }
 
-func (w *Worker) run() {
+func (w *worker) run() {
     c.Logger.WithFields(c.LogFields{
-        "moduleName" : ModuleName,
-        "threadId"   : w.Id,
-    }).Info("thread start")
-    for w.State == c.Running {
-        // regist worker job chan, means the routine is ready to serve
-        w.WorkerPool<- w.JobChan
+        "module" : w.name,
+        "workId" : w.id,
+    }).Infof("ready to work")
 
+    // regist worker job chan, means the routine is ready to serve
+    w.workPool<- w.JobChan
+    for w.State == c.Running {
         select {
         case dq := <-w.JobChan:
             c.Logger.WithFields(c.LogFields{
-                "moduleName" : ModuleName,
-                "threadId"   : w.Id,
-            }).Infof("worker received num: %d", dq)
-        default:
-            time.Sleep(c.DefaultSleepDur)
+                "module" : w.name,
+                "workId" : w.id,
+            }).Infof("receive rand num: %d", dq)
+            w.workPool<- w.JobChan            // after working, put job chan to worker pool
+        case <-time.After(c.DefaultSleepDur):
         }
     }
 }
 
-func (w *Worker) Stop() {
+func (w *worker) Stop() {
     for w.State == c.Running {
         if len(w.JobChan) > 0 {
             time.Sleep(1 * time.Second)
@@ -148,27 +151,26 @@ func (w *Worker) Stop() {
         }
     }
     c.Logger.WithFields(c.LogFields{
-        "moduleName" : ModuleName,
-        "threadId"   : w.Id,
-    }).Info("thread stopped")
+        "module" : w.name,
+        "workId" : w.id,
+    }).Infof("stopped")
 }
 
-func (w *Worker) ProcStatus() *c.MonitorPack {
-    stdLevel  := c.MONITOR_INFO
+func (w *worker) ProcStatus() *c.MonitorPack {
+    level := c.MONITOR_INFO
     if w.State == c.Running {
-        stdLevel = c.MONITOR_INFO
+        level  = c.MONITOR_INFO
     } else {
-        stdLevel = c.MONITOR_ERROR
+        level  = c.MONITOR_ERROR
     }
-
-    content := fmt.Sprint(w.State)
+    content   := fmt.Sprint(w.State)
     return &c.MonitorPack{
-        StdLevel : stdLevel,
-        Content  : content,
-        Fields   : c.LogFields{
-            "threadId" : w.Id,
-            "module"   : ModuleName,
-            "state"    : w.State,
+        Name    : w.name,
+        State   : w.State,
+        Level   : level,
+        Content : content,
+        Fields  : c.LogFields{
+            "workId" : w.id,
         },
     }
 }

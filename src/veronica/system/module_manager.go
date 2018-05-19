@@ -14,48 +14,46 @@ import(
     c "veronica/common"
 )
 
-
 // Manager all system & custome modules.
 // Go map(search instance)&array(priority defines) are used to Manual.
 // One direct chan can send SINGAL to module main goroutines.
 type ModuleManager struct {
-    priority  []string                      // module priority array
-    stopDelay int                           // module force shutdown waiting time
-    pipes     map[string]chan c.SIGNAL      // module pipe map
+    priority  []string                    // module priority array
+    stopDelay int                         // module force shutdown waiting time
+    pipes     map[string]chan c.SIGNAL    // module pipe map
     mu        *sync.Mutex
-
-    Modules      map[string]c.Module        // run modules
-    SysMonitor   *Monitor                   // monitor module
-    SysTimerTask *TimerTask                 // ticker module
+    Modules    map[string]c.Module        // module map
+    SysMonitor *Monitor                   // monitor module
+    SysTkTask  *TickerTask                // ticker task module
 }
 
 func NewModuleManager() *ModuleManager {
     return &ModuleManager{
-        Modules   : map[string]c.Module{},
-        priority  : []string{},
-        stopDelay : 30,                     // waiting 30s then module stop abandoned
-        pipes     : map[string]chan c.SIGNAL{},
-        mu        : new(sync.Mutex),
-        SysMonitor   : NewMonitor(),
-        SysTimerTask : NewTimerTask(),
+        Modules    : map[string]c.Module{},
+        priority   : []string{},
+        stopDelay  : 30,                  // stop abandon time delay
+        pipes      : map[string](chan c.SIGNAL){},
+        mu         : new(sync.Mutex),
+        SysMonitor : NewMonitor(),
+        SysTkTask  : NewTickerTask(),
     }
 }
 
 // init module to module manager
-func (m *ModuleManager) InitModule(name string, module c.Module) {
+func (m *ModuleManager) Init(name string, module c.Module) {
     m.Modules[name] = module
     m.priority      = append(m.priority, name)
 
     // init pipe chan, module Receive() method get chan pointer
     m.pipes[name]   = make(chan c.SIGNAL, 1)
-    module.Receive(m.pipes[name])
+    module.Init(m.pipes[name])
 }
 
 // Sending broadcast message to all modules.
 // Custome SIGNAL can be defined.
 func (m *ModuleManager) SendBoardcast(s c.SIGNAL) {
-    for _, modulePipe := range m.pipes {
-        modulePipe<- s
+    for _, pipe := range m.pipes {
+        pipe<- s
     }
 }
 
@@ -72,31 +70,31 @@ func (m *ModuleManager) SendSignal(s c.SIGNAL, name string) error {
 // Method used SendBoardcast() sending START SIGNAL.
 // Also here can be changed in sequence as expected.
 // Module should start in time, or panic will be throwned.
-func (m *ModuleManager) StartModules() error {
+func (m *ModuleManager) Start() error {
     if len(m.Modules) == 0 {
-        return fmt.Errorf("start failed, module not exist")
+        return fmt.Errorf("failed, no valid modules")
     }
     m.SendBoardcast(c.SIGSTART)
 
     // start module
     started := false
-    for started != true {
-        if len(m.Modules) == m.StartedModuleNum() {
+    for !started {
+        if len(m.Modules) == m.startModuleNum() {
             started = true
         } else {
             time.Sleep(c.DefaultSleepDur)
         }
     }
     m.SysMonitor.Start()
-    m.SysTimerTask.Start()
+    m.SysTkTask.Start()
     return nil
 }
 
 // Stop all modules.
 // Stop work will follow the defined priority in sequence.
-func (m *ModuleManager) StopModules() {
+func (m *ModuleManager) Stop() {
     m.SysMonitor.Stop()
-    m.SysTimerTask.Stop()
+    m.SysTkTask.Stop()
 
     p := make([]string, len(m.priority))
     copy(p, m.priority)
@@ -105,17 +103,17 @@ func (m *ModuleManager) StopModules() {
             c.Logger.WithFields(c.LogFields{
                 "module" : name,
                 "err"    : err.Error(),
-            }).Error("stop failed")
+            }).Errorf("%s, stop failed", name)
         } else {
             c.Logger.WithFields(c.LogFields{
                 "module" : name,
-            }).Info("stop success")
+            }).Infof("%s, stopped", name)
         }
     }
 }
 
 // Get Started module quantity.
-func (m *ModuleManager) StartedModuleNum() int {
+func (m *ModuleManager) startModuleNum() int {
     cnt := 0
     for _, module := range m.Modules {
         if module.Status() == c.Running {
@@ -137,7 +135,7 @@ func (m *ModuleManager) StoppedModuleNum() int {
 }
 
 // Get Manager manage module quantity.
-func (m *ModuleManager) ModulsNum() int {
+func (m *ModuleManager) ModuleNum() int {
     return len(m.Modules)
 }
 
@@ -157,12 +155,12 @@ func (m *ModuleManager) stopModule(name string) error {
     for stopped != true {
         select {
         case <-timer.C:
-            m.deleteModule(name)
+            m.unload(name)
             stopped = true
             return fmt.Errorf("can not stop in 30s, abandon")
         default:
             if module.Status() == c.Stopped {
-                m.deleteModule(name)
+                m.unload(name)
                 stopped = true
             } else {
                 time.Sleep(time.Microsecond * 100)
@@ -173,7 +171,7 @@ func (m *ModuleManager) stopModule(name string) error {
 }
 
 // Unload module, used to stop module.(just delete module from map and priority)
-func (m *ModuleManager) deleteModule(name string) {
+func (m *ModuleManager) unload(name string) {
     m.mu.Lock()
     defer m.mu.Unlock()
 
