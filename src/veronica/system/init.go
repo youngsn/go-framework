@@ -36,38 +36,41 @@ func InitApp() *cli.App {
     app.Version = c.APP_VERSION
     app.Usage   = fmt.Sprintf("Run app %s", c.APP_NAME)
     app.Flags   = cmdFlag
-    app.Before  = func(c *cli.Context) error {   // Parse cmd params
-        return parseConfig(c)
-    }
-    app.After   = func(c *cli.Context) error {   // If has exec errors, return
-        if err != nil {             // run failed, we need panic
-            panic(err.Error())
-        }
-        return err
+    app.Before  = func(c *cli.Context) error {   // Parse cmd & init yaml config file
+        return initConfig(c)
     }
     app.Action  = func(c *cli.Context) {         // Run apps
         err     = appRun()
+    }
+    app.After   = func(c *cli.Context) error {   // If run failed, handle it easily, just panic
+        if err != nil {
+            panic(err.Error())
+        }
+        return err
     }
     return app
 }
 
 // Parse cmd params and get yml config filepath
 // Then pase config file
-func parseConfig(context *cli.Context) error {
+func initConfig(context *cli.Context) error {
     cfgFile   := context.String("config")
     if cfgFile == "" {
         return fmt.Errorf("no config file exist, please check filepath")
     }
 
-    var config c.AppConfig
-    if c, err := ioutil.ReadFile(cfgFile); err != nil {
+    var (
+        cfg []byte
+        err error
+        config c.AppConfig
+    )
+    if cfg, err = ioutil.ReadFile(cfgFile); err != nil {
         return err
-    } else {
-        if err = yaml.Unmarshal(c, &config); err != nil {
-            return err
-        }
     }
-    c.Config   = config
+    if err = yaml.Unmarshal(cfg, &config); err != nil {
+        return err
+    }
+    c.Config = config
     return nil
 }
 
@@ -87,6 +90,7 @@ func appRun() error {
         return err
     }
     c.Logger.Infof("app start success")
+
     NewSignal().Start()             // signal capture
     c.UnlinkPid()
     return nil
@@ -106,15 +110,12 @@ func appInit() error {
     if err := c.FilePathExist(c.DataPath); err != nil {
         return err
     }
-    // init log engine
-    if err := loggerInit(); err != nil {
-        return err
-    }
+    initLogger()
 
     // start app
     c.Logger.Infof("bootstrap %s, worker %d", c.APP_NAME, c.Config.Worker)
     SysPprof   = NewPprof()             // new pprof monitor
-    SysManager = initModules()          // new module & module manager init
+    SysManager = initAppModule()        // init modules
 
     // init channel
     maxChanSize := c.Config.ChanSize
@@ -122,18 +123,15 @@ func appInit() error {
     return nil
 }
 
-// Init custome modules here.
-func initModules() *ModuleManager {
+func initAppModule() *ModuleManager {
     m := NewModuleManager()
-    m.Init("Demo", demo.NewDispatcher())
+    m.Init("Demo", demo.NewDispatcher())        // add app modules
     return m
 }
 
-// Init global log engine instance.
-func loggerInit() error {
+func initLogger() {
     flag    := "app"
     c.Logger = c.NewLog(flag)
-    return nil
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

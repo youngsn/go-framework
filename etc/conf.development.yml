@@ -5,8 +5,8 @@ max_chan_size : 10240
 
 # debug def
 debug :
-  debug  : 1
-  remote : "0.0.0.0:2234"
+  debug : 1
+  addr  : "0.0.0.0:2234"
 
 # log conf
 # rotate: 0: not rotate; 1: hour rotate
@@ -14,13 +14,13 @@ debug :
 # level:  1: debug 2: info 4: error 8: fatal 16: panic
 # path:   /path/to/log, config as you wish
 log :
-  rotate : 1
+  rotate : 0
   level  : 1
   path   : "log"
 
 # monitor conf
 monitor :
-  interval : 30        # monitor interval, unit : second
+  interval : 10        # monitor interval, unit: second
 
 # ticker configs
 tickers :

@@ -23,7 +23,7 @@ type TickerTask struct {
     State    c.RState
 }
 
-// TickerTask struct
+// ticker task struct
 type tkTask struct {
     Name   string            // taskname
     Status bool              // run status
@@ -43,10 +43,10 @@ func NewTickerTask() *TickerTask {
 
 // Start TrickerTask instance.
 // NOTICE: All task run by goroutine.
-func (t *TickerTask) Start() {
+func (t *TickerTask) run() {
     t.initTkTask()                      // init timer tickers
     t.State = c.Running
-    for _, task := range t.tkTask {
+    for _, tk := range t.tkTask {
         go func(task *tkTask) {         // start by goroutine
             for t.State == c.Running {
                 select {
@@ -56,16 +56,23 @@ func (t *TickerTask) Start() {
                     usage, _ := t.timer.Stop(task.Name)
 
                     c.Logger.WithFields(c.LogFields{
-                        "exTime" : tm.Format("2006-01-02 15:04:05"),
-                        "usage"  : strconv.FormatFloat(float64(usage / 1000000), 'f', 2, 32),
+                        "exTime"   : tm.Format("2006-01-02 15:04:05"),
+                        "usage"    : strconv.FormatFloat(float64(usage / 1000000), 'f', 2, 32),
                         "taskName" : task.Name,
                     }).Infof("task finished")
                 case <-time.After(c.DefaultSleepDur):
                 }
             }
-        }(task)
+        }(tk)
     }
-    c.Logger.Infof("%s, start work", t.name)
+}
+
+// stop ticker tasks.
+func (t *TickerTask) stop() {
+    for _, task := range t.tkTask {
+        task.Tk.Stop()
+    }
+    t.State = c.Stopped
 }
 
 // Init ticker tasks from config file.
@@ -91,13 +98,28 @@ func (t *TickerTask) initTkTask() {
     }
 }
 
-// Stop all tasks.
-func (t *TickerTask) Stop() {
-    t.State = c.Stopped
-    for _, task := range t.tkTask {
-        task.Tk.Stop()
-    }
-    c.Logger.Infof("%s, stopped", t.name)
+func (t *TickerTask) Init(m <-chan c.SIGNAL) {
+    go func() {
+        for {
+            select {
+            case signal := <-m:
+                if signal == c.SIGSTART {
+                    t.run()
+                } else if signal == c.SIGSTOP {
+                    t.stop()
+                }
+            case <- time.After(c.DefaultSleepDur):
+            }
+        }
+    }()
+}
+
+func (t *TickerTask) Status() c.RState {
+    return t.State
+}
+
+func (t *TickerTask) Monitor() []*c.MonitorPack {
+    return nil
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

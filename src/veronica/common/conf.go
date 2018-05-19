@@ -19,13 +19,15 @@ type AppConfig struct {
         Path   string
     }
     Tickers  map[string]int64
-    Service  struct {Local NameLocalDef}
-    DbClusters map[string]DbClusterDef
+    Service  struct {
+        Local NameLocalDef
+    }
     Redis    map[string]struct {
         Db      int
         Passwd  string
         Service string
     }
+    DbClusters map[string]DbClusterDef
 
     Demo DemoDef
 }

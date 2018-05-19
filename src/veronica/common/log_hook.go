@@ -27,8 +27,8 @@ func (hook contextHook) Levels() []logrus.Level {
 // implement logrus fire
 // we can add public vals in here
 func (hook contextHook) Fire(entry *logrus.Entry) error {
-    entry.Data["source"] = findCaller()
     entry.Data["app"]    = APP_NAME
+    entry.Data["source"] = findCaller()
     return nil
 }
 

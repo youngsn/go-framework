@@ -22,7 +22,7 @@ func NewLog(name string) *Log {
     // init log formatter
     formatter := new(logrus.TextFormatter)
     formatter.TimestampFormat = "2006-01-02 15:04:05"
-    formatter.DisableSorting  = true
+    formatter.DisableSorting  = false
 
     // init file log hook, file log using lfs hook
     path, wfPath := getLogFilepath(name, logConf.Path)  // log paths

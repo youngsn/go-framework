@@ -18,7 +18,6 @@ type Module interface {
 
 // Monitor pack data.
 type MonitorPack struct {
-    Name    string                  // module name
     State   RState                  // module run status
     Level   int                     // log level
     Content string                  // log content

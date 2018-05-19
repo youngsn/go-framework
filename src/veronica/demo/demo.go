@@ -24,6 +24,38 @@ func NewDispatcher() *Dispatcher {
     }
 }
 
+// Start running dispatcher
+func (d *Dispatcher) run() {
+    for i := 0; i < d.threads; i++ {
+        id     := i + 1
+        worker := newWorker(id, d.WorkerPool)
+        worker.Start()                            // start worker
+        d.workers = append(d.workers, worker)     // add worker instance to slice
+    }
+    go d.dispatch()
+}
+
+// work dispatch demo
+func (d *Dispatcher) dispatch() {
+    for {
+        select {
+        case job := <-c.DemoQueue:
+            go func(job int) {
+                // Try choose one worker to work, if no aviable worker, it will be blocked.
+                jobChan := <-d.WorkerPool
+                jobChan<- job        // add this job to this worker Chan
+            }(job)
+        case <- time.After(c.DefaultSleepDur):
+        }
+    }
+}
+
+func (d *Dispatcher) stop() {
+    for _, worker := range d.workers {
+        worker.Stop()
+    }
+}
+
 // Regist and listen to system signal
 func (d *Dispatcher) Init(m <-chan c.SIGNAL) {
     go func() {
@@ -57,41 +89,9 @@ func (d *Dispatcher) Status() c.RState {
 func (d *Dispatcher) Monitor() []*c.MonitorPack {
     pk := []*c.MonitorPack{}
     for _, worker := range d.workers {
-        pk = append(pk, worker.ProcStatus())
+        pk = append(pk, worker.WorkStatus())
     }
     return pk
-}
-
-// Start running dispatcher
-func (d *Dispatcher) run() {
-    for i := 0; i < d.threads; i++ {
-        id     := i + 1
-        worker := newWorker(id, d.WorkerPool)
-        worker.Start()                            // start worker
-        d.workers = append(d.workers, worker)     // add worker instance to slice
-    }
-    go d.dispatch()
-}
-
-// work dispatch demo
-func (d *Dispatcher) dispatch() {
-    for {
-        select {
-        case job := <-c.DemoQueue:
-            go func(job int) {
-                // Try choose one worker to work, if no aviable worker, it will be blocked.
-                jobChan := <-d.WorkerPool
-                jobChan<- job        // add this job to this worker Chan
-            }(job)
-        case <- time.After(c.DefaultSleepDur):
-        }
-    }
-}
-
-func (d *Dispatcher) stop() {
-    for _, worker := range d.workers {
-        worker.Stop()
-    }
 }
 
 
@@ -109,8 +109,8 @@ func newWorker(id int, workPool chan (chan int)) *worker {
         id       : id,
         name     : moduleName,
         workPool : workPool,               // pool chan to save worker job chan
-        JobChan  : make(chan int),         // receive task from outside world
         State    : c.Stopped,
+        JobChan  : make(chan int),         // receive task from outside world
     }
 }
 
@@ -123,7 +123,7 @@ func (w *worker) run() {
     c.Logger.WithFields(c.LogFields{
         "module" : w.name,
         "workId" : w.id,
-    }).Infof("ready to work")
+    }).Infof("worker ready")
 
     // regist worker job chan, means the routine is ready to serve
     w.workPool<- w.JobChan
@@ -156,7 +156,7 @@ func (w *worker) Stop() {
     }).Infof("stopped")
 }
 
-func (w *worker) ProcStatus() *c.MonitorPack {
+func (w *worker) WorkStatus() *c.MonitorPack {
     level := c.MONITOR_INFO
     if w.State == c.Running {
         level  = c.MONITOR_INFO
@@ -165,7 +165,6 @@ func (w *worker) ProcStatus() *c.MonitorPack {
     }
     content   := fmt.Sprint(w.State)
     return &c.MonitorPack{
-        Name    : w.name,
         State   : w.State,
         Level   : level,
         Content : content,
