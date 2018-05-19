@@ -116,28 +116,25 @@ func newWorker(id int, workPool chan (chan int)) *worker {
 
 func (w *worker) Start() {
     w.State = c.Running
-    go w.run()
-}
-
-func (w *worker) run() {
     c.Logger.WithFields(c.LogFields{
         "module" : w.name,
         "workId" : w.id,
     }).Infof("worker ready")
-
-    // regist worker job chan, means the routine is ready to serve
-    w.workPool<- w.JobChan
-    for w.State == c.Running {
-        select {
-        case dq := <-w.JobChan:
-            c.Logger.WithFields(c.LogFields{
-                "module" : w.name,
-                "workId" : w.id,
-            }).Infof("receive rand num: %d", dq)
-            w.workPool<- w.JobChan            // after working, put job chan to worker pool
-        case <-time.After(c.DefaultSleepDur):
+    go func() {
+        // regist worker job chan, means the routine is ready to serve
+        w.workPool<- w.JobChan
+        for w.State == c.Running {
+            select {
+            case dq := <-w.JobChan:
+                c.Logger.WithFields(c.LogFields{
+                    "module" : w.name,
+                    "workId" : w.id,
+                }).Infof("receive rand num: %d", dq)
+                w.workPool<- w.JobChan            // after working, put job chan to worker pool
+            case <-time.After(c.DefaultSleepDur):
+            }
         }
-    }
+    } ()
 }
 
 func (w *worker) Stop() {

@@ -9,7 +9,6 @@ import (
     "strconv"
 )
 
-// If filepath exists, will auto create one if not exist.
 func FilePathExist(path string) error {
     if _, err := os.Stat(path); os.IsNotExist(err) {
         if err := os.Mkdir(path, 0775); err != nil {
@@ -19,21 +18,20 @@ func FilePathExist(path string) error {
     return nil
 }
 
-// Write main pid into pidfile.
+// Write pid into pidfile in var dir
 func WritePid() error {
-    pidFile := RunPath + "/" + APP_NAME + ".pid"
+    path    := RunPath + "/" + APP_NAME + ".pid"
     pid     := os.Getpid()
-    fd, err := os.OpenFile(pidFile, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+    fd, err := os.OpenFile(path, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     defer fd.Close()
 
     if err != nil {
-        fmt.Sprintf("Can not open pid file %s, %s", pidFile, err.Error())
+        fmt.Sprintf("file %s, %s", path, err.Error())
     }
     fd.Write([]byte(strconv.Itoa(pid)))
     return nil
 }
 
-// Unlink pid file
 func UnlinkPid() {
     pidFile := RunPath + "/" + APP_NAME + ".pid"
     syscall.Unlink(pidFile)

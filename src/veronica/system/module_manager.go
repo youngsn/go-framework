@@ -33,6 +33,7 @@ func NewModuleManager() *ModuleManager {
         pipes      : map[string](chan c.SIGNAL){},
         appModules : map[string]c.Module{},
     }
+    // auto regist monitor & ticker task
     mg.Init("Monitor", NewMonitor())
     mg.Init("TickerTask", NewTickerTask())
     return &mg
@@ -110,7 +111,7 @@ func (m *ModuleManager) GetAppModules() map[string]c.Module {
 }
 
 // Get Started module quantity.
-func (m *ModuleManager) startModuleNum() int {
+func (m *ModuleManager) runModuleNum() int {
     cnt := 0
     for _, module := range m.appModules {
         if module.Status() == c.Running {
@@ -121,7 +122,7 @@ func (m *ModuleManager) startModuleNum() int {
 }
 
 // Get Stopped module qunatity.
-func (m *ModuleManager) StoppedModuleNum() int {
+func (m *ModuleManager) stopModuleNum() int {
     cnt := 0
     for _, inst := range m.appModules {
         if inst.Status() == c.Stopped {
@@ -129,11 +130,6 @@ func (m *ModuleManager) StoppedModuleNum() int {
         }
     }
     return cnt
-}
-
-// Get Manager manage module quantity.
-func (m *ModuleManager) ModuleNum() int {
-    return len(m.appModules)
 }
 
 // Stop one module.

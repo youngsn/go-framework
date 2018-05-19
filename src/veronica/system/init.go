@@ -21,7 +21,8 @@ var (
     SysManager *ModuleManager      // module manage
 )
 
-func InitApp() *cli.App {
+// In init func, use cli package to parse config and manage app life cycle
+func Init() *cli.App {
     cmdFlag := []cli.Flag{
         cli.StringFlag{
             Name  : "config, c",
@@ -36,13 +37,20 @@ func InitApp() *cli.App {
     app.Version = c.APP_VERSION
     app.Usage   = fmt.Sprintf("Run app %s", c.APP_NAME)
     app.Flags   = cmdFlag
-    app.Before  = func(c *cli.Context) error {   // Parse cmd & init yaml config file
-        return initConfig(c)
+    app.Before  = func(ct *cli.Context) error {   // init config from -c & init app
+        if err = initConfig(ct); err != nil {
+            return err
+        }
+        if err = initApp(); err != nil {
+            return err
+        }
+        return nil
     }
-    app.Action  = func(c *cli.Context) {         // Run apps
-        err     = appRun()
+    app.Action  = func(ct *cli.Context) {         // run app
+        c.Logger.Infof("bootstrap %s, worker %d", c.APP_NAME, c.Config.Worker)
+        err     = runApp()
     }
-    app.After   = func(c *cli.Context) error {   // If run failed, handle it easily, just panic
+    app.After   = func(ct *cli.Context) error {   // if app run failed, handle it, panic to user
         if err != nil {
             panic(err.Error())
         }
@@ -74,30 +82,30 @@ func initConfig(context *cli.Context) error {
     return nil
 }
 
-// app run main entry.
-func appRun() error {
-    if err := appInit(); err != nil {
-        return err
-    }
+// App run entry, start from here
+func runApp() error {
     if err := c.WritePid(); err != nil {
         return err
     }
-
-    worker := c.Config.Worker       // worker num
+    worker := c.Config.Worker       // work cpu num
+    if worker > runtime.NumCPU() {
+        worker = runtime.NumCPU()
+    }
     runtime.GOMAXPROCS(worker)
-    SysPprof.WebMonitor()           // pprof monitor
-    if err := SysManager.Start(); err != nil {     // start app modules
+
+    SysPprof.WebMonitor()                         // pprof monitor
+    if err := SysManager.Start(); err != nil {    // start app modules
         return err
     }
     c.Logger.Infof("app start success")
 
-    NewSignal().Start()             // signal capture
+    NewSignal().Start()             // signal capture, no end loop
     c.UnlinkPid()
     return nil
 }
 
 // Init app data.
-func appInit() error {
+func initApp() error {
     // init common package global vars
     sysPath, _ := os.Getwd()
     c.Environ   = c.Config.Environ
@@ -110,14 +118,11 @@ func appInit() error {
     if err := c.FilePathExist(c.DataPath); err != nil {
         return err
     }
+
     initLogger()
+    SysPprof   = NewPprof()             // pprof monitor
+    SysManager = initAppModule()        // init app module
 
-    // start app
-    c.Logger.Infof("bootstrap %s, worker %d", c.APP_NAME, c.Config.Worker)
-    SysPprof   = NewPprof()             // new pprof monitor
-    SysManager = initAppModule()        // init modules
-
-    // init channel
     maxChanSize := c.Config.ChanSize
     c.DemoQueue  = make(chan int, maxChanSize)
     return nil
