@@ -7,4 +7,4 @@
 - monitor.go: module monitor implements
 - pprof.go: pprof performance monitor
 - signal.go: system SIGNAL capture
-- trigger.go & trigger_handler.go: ticker task & ticker task handler
+- ticker_task.go & ticker_hd.go: ticker task & ticker task handler
