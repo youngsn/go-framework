@@ -1,5 +1,6 @@
 # Veronica
 
+
 golang back-end framework &amp; code specification
 
 Veronica is a back-end service framework written by golang. You can build your own back-end service and code specification quickly.
@@ -37,8 +38,9 @@ $ ./bin/$proj -c conf/conf.development.yml
 
 > veronica provides a lot of basic components & module implements & code specification, you can change to your own quickly:
 
-components: 
-- log engine (seelog)
+
+components:
+- log engine (logrus)
 - MySQL orm library (gorm)
 - config parser (changed from toml to yaml)
 - module manager (provides effective way to control each module)
@@ -58,7 +60,9 @@ code specification:
 
 veronica also uses some fantastic third packages, thanks very much to these authors.
 
-- [seelog log engine](https://github.com/cihub/seelog) master
+- [logrus engine](https://github.com/Sirupsen/logrus) master
+- [logrus logrotate hook](https://github.com/lestrrat-go/file-rotatelogs) master
+- [logrus local system hook](https://github.com/rifflock/lfshook) master
 - [yaml config parser](https://github.com/go-yaml/yaml) v2, changed from toml to yaml.
 - [MySQL driver](https://github.com/go-sql-driver/mysql) master
 - [gorm orm lib](https://github.com/jinzhu/gorm) master
@@ -72,7 +76,6 @@ As what I know, I just implements all what I think is useful. So hope more and m
 
 **TangYang**
 <youngsn.tang@gmail.com>
-
 
 ## License
 

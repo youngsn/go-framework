@@ -8,20 +8,29 @@ import (
     "fmt"
 )
 
-// Module type define
-// If you want to use veronica, your own module should MUST implement these methods.
+// Module type define,
+// If you want to use, your own modules should MUST implement these methods.
 type Module interface {
     Init(s <-chan SIGNAL)          // init module, listen signal chan
-    Status()  RState               // module exec status
-    Monitor() []*MonitorPack       // monitor module status
+    Status() RState                // module exec status
+}
+
+// Module worker type define
+type WorkerInst interface {
+    Start()
+    Stop()
+    Reload()
+    Monitor() *MonitorPack
+    RunStatus() RState
 }
 
 // Monitor pack data.
 type MonitorPack struct {
-    State   RState                  // module run status
-    Level   int                     // log level
-    Content string                  // log content
-    Fields  LogFields               // log fields
+    Name    string                 // module name
+    State   RState                 // module run status
+    Level   int                    // log level
+    Content string                 // log content
+    Fields  LogFields              // log fields
 }
 
 type NameServiceInst struct {

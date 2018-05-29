@@ -12,7 +12,7 @@ import (
 
 // system environment defines
 const APP_NAME    = "veronica"
-const APP_VERSION = "2.0.0"
+const APP_VERSION = "2.1.5"
 
 var (
     Environ   string
@@ -28,6 +28,7 @@ var (
 // Project channels, THIS IS JUST DEMO.
 var (
     DemoQueue chan int
+    MonitorQueue chan []*MonitorPack
 )
 
 // All constant defines are below.
@@ -43,6 +44,7 @@ const (
     SIGSTART SIGNAL = iota + 1
     SIGSTOP
     SIGRELOAD
+    SIGMONITOR
 )
 
 func (s SIGNAL) String() string {
@@ -53,6 +55,8 @@ func (s SIGNAL) String() string {
         return "Stop"
     case SIGRELOAD:
         return "Reload"
+    case SIGMONITOR:
+        return "Monitor"
     default:
         return "unknown"
     }

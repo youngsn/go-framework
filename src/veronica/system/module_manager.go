@@ -19,7 +19,7 @@ import(
 // One direct chan can send SINGAL to module main goroutines.
 type ModuleManager struct {
     mu         *sync.Mutex
-    stopDelay  int                         // module force shutdown waiting time
+    stopDelay  time.Duration               // module force shutdown waiting time
     priority   []string                    // module priority list
     pipes      map[string]chan c.SIGNAL    // module pipe map
     appModules map[string]c.Module         // module map
@@ -28,7 +28,7 @@ type ModuleManager struct {
 func NewModuleManager() *ModuleManager {
     mg := ModuleManager{
         mu         : new(sync.Mutex),
-        stopDelay  : 30,                            // stop abandon time delay
+        stopDelay  : time.Duration(30) * time.Second,
         priority   : []string{},
         pipes      : map[string](chan c.SIGNAL){},
         appModules : map[string]c.Module{},
@@ -143,9 +143,9 @@ func (m *ModuleManager) stopModule(name string) error {
     }
 
     m.SendSignal(c.SIGSTOP, name)
-    timer   := time.NewTimer(time.Duration(m.stopDelay) * time.Second)
+    timer   := time.NewTimer(m.stopDelay)
     stopped := false
-    for stopped != true {
+    for !stopped {
         select {
         case <-timer.C:
             m.unload(name)

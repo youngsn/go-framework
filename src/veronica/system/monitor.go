@@ -33,8 +33,10 @@ func (m *Monitor) run() {
             case <-m.tk.C:
                 m.logger.Infof("system")
                 m.systemMonitor()
+                SysManager.SendBoardcast(c.SIGMONITOR)      // send monitor sig
+            case packs := <-c.MonitorQueue:
                 m.logger.Infof("module")
-                m.moduleMonitor()
+                m.moduleMonitor(packs)
             case <-time.After(c.DefaultSleepDur):
             }
         }
@@ -45,29 +47,26 @@ func (m *Monitor) stop() {
     m.State = c.Stopped
 }
 
-// Module status monitor
-func (m *Monitor) moduleMonitor() {
-    list := SysManager.GetAppModules()
-    for name, md := range list {
-        mPacks   := md.Monitor()
-        if mPacks == nil {
-            continue
+// Output module monitor info
+func (m *Monitor) moduleMonitor(mPacks []*c.MonitorPack) {
+    if mPacks == nil {
+        return
+    }
+    for _, pack := range mPacks {
+        name    := pack.Name
+        if pack.Fields == nil {
+            pack.Fields = c.LogFields{
+                "module" : name,
+                "state"  : pack.State,
+            }
+        } else {
+            pack.Fields["module"] = name
+            pack.Fields["state"]  = pack.State
         }
-        for _, pack := range mPacks {
-            if pack.Fields == nil {
-                pack.Fields = c.LogFields{
-                    "module" : name,
-                    "state"  : pack.State,
-                }
-            } else {
-                pack.Fields["module"] = name
-                pack.Fields["state"]  = pack.State
-            }
-            if pack.Level == c.MONITOR_ERROR {
-                m.logger.WithFields(pack.Fields).Errorf(pack.Content)
-            } else {
-                m.logger.WithFields(pack.Fields).Info(pack.Content)
-            }
+        if pack.Level == c.MONITOR_ERROR {
+            m.logger.WithFields(pack.Fields).Errorf(pack.Content)
+        } else {
+            m.logger.WithFields(pack.Fields).Info(pack.Content)
         }
     }
 }
@@ -103,10 +102,6 @@ func (m *Monitor) Init(ch <-chan c.SIGNAL) {
 
 func (m *Monitor) Status() c.RState {
     return m.State
-}
-
-func (m *Monitor) Monitor() []*c.MonitorPack {
-    return nil
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

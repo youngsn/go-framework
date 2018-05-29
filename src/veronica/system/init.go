@@ -123,8 +123,9 @@ func initApp() error {
     SysPprof   = NewPprof()             // pprof monitor
     SysManager = initAppModule()        // init app module
 
-    maxChanSize := c.Config.ChanSize
-    c.DemoQueue  = make(chan int, maxChanSize)
+    chanSize  := c.Config.ChanSize
+    c.DemoQueue    = make(chan int, chanSize)
+    c.MonitorQueue = make(chan []*c.MonitorPack, chanSize)
     return nil
 }
 
