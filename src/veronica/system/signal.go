@@ -7,8 +7,8 @@ package system
 import (
     "os"
     "time"
-    "os/signal"
     "syscall"
+    "os/signal"
 
     c "veronica/common"
 )
@@ -25,14 +25,14 @@ func NewSignal() *Signal {
     }
 }
 
-func (s *Signal) Start() {
+func (p *Signal) Start() {
     for {
-        signal   := <-s.ch
-        if signal == syscall.SIGINT || signal == syscall.SIGTERM {  // stop signal
+        sg := <-p.ch
+        if sg == syscall.SIGINT || sg == syscall.SIGTERM {  // stop signal
             c.Logger.WithFields(c.LogFields{
-                "SIGNAL" : signal,
-            }).Infof("received signal, %s", signal)
-            SysManager.Stop()                                       // stop module
+                "SIGNAL" : sg,
+            }).Infof("received signal, %s", sg)
+            SysManager.Stop()                               // stop module
             c.Logger.Infof("success, bye~")
             return
         }

@@ -2,7 +2,6 @@ package demo
 
 
 import (
-    "fmt"
     "time"
 
     c "veronica/common"
@@ -15,9 +14,9 @@ type Demo struct {
 }
 
 func NewDemo(id int, workPool chan (chan int)) *Demo {
-    moduleName := "Demo"
+    name := "Demo"
     return &Demo{
-        Worker   : c.NewWorker(id, moduleName),
+        Worker   : c.NewWorker(id, name),
         workPool : workPool,               // pool chan to save worker job chan
         JobChan  : make(chan int),         // receive task from outside world
     }
@@ -43,7 +42,7 @@ func (p *Demo) Start() {
             case <-time.After(c.DefaultSleepDur):
             }
         }
-    } ()
+    }()
 }
 
 func (p *Demo) Stop() {
@@ -69,7 +68,7 @@ func (p *Demo) Monitor() *c.MonitorPack {
     } else {
         level  = c.MONITOR_ERROR
     }
-    content   := fmt.Sprint(p.State)
+    content   := p.State.String()
     return &c.MonitorPack{
         Name    : p.Name,
         State   : p.State,

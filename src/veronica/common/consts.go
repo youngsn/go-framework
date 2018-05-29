@@ -12,7 +12,7 @@ import (
 
 // system environment defines
 const APP_NAME    = "veronica"
-const APP_VERSION = "2.1.5"
+const APP_VERSION = "2.0.0"
 
 var (
     Environ   string

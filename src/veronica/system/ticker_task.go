@@ -20,7 +20,7 @@ type TickerTask struct {
     timer    *c.TimerBox     // timer
     tkTask   []*tkTask       // task list
     interval int64
-    State    c.RState
+    state    c.RState
 }
 
 // ticker task struct
@@ -36,24 +36,24 @@ func NewTickerTask() *TickerTask {
         name     : "Ticker",
         timer    : c.NewTimerBox(),
         tkTask   : []*tkTask{},
+        state    : c.Stopped,
         interval : 10,
-        State    : c.Stopped,
     }
 }
 
 // Start TrickerTask instance.
 // NOTICE: All task run by goroutine.
-func (t *TickerTask) run() {
-    t.initTkTask()                      // init timer tickers
-    t.State = c.Running
-    for _, tk := range t.tkTask {
+func (p *TickerTask) run() {
+    p.initTkTask()                      // init timer tickers
+    p.state = c.Running
+    for _, tk := range p.tkTask {
         go func(task *tkTask) {         // start by goroutine
-            for t.State == c.Running {
+            for p.state == c.Running {
                 select {
                 case tm := <-task.Tk.C:
-                    t.timer.Start(task.Name)
+                    p.timer.Start(task.Name)
                     task.TkHd()
-                    usage, _ := t.timer.Stop(task.Name)
+                    usage, _ := p.timer.Stop(task.Name)
 
                     c.Logger.WithFields(c.LogFields{
                         "exTime"   : tm.Format("2006-01-02 15:04:05"),
@@ -68,20 +68,20 @@ func (t *TickerTask) run() {
 }
 
 // stop ticker tasks.
-func (t *TickerTask) stop() {
-    for _, task := range t.tkTask {
+func (p *TickerTask) stop() {
+    for _, task := range p.tkTask {
         task.Tk.Stop()
     }
-    t.State = c.Stopped
+    p.state = c.Stopped
 }
 
 // Init ticker tasks from config file.
 // Task handler are all from trigger_handler.go.
-func (t *TickerTask) initTkTask() {
+func (p *TickerTask) initTkTask() {
     for name, interval := range c.Config.Tickers {
         hd   := getTickerHandler(name)               // get task handler
-        if interval < t.interval {
-            panic(fmt.Sprintf("%s, interval must large %ds", name, t.interval))
+        if interval < p.interval {
+            panic(fmt.Sprintf("%s, interval must large %ds", name, p.interval))
         }
 
         task := &tkTask{
@@ -90,7 +90,7 @@ func (t *TickerTask) initTkTask() {
             Tk     : time.NewTicker(time.Duration(interval) * time.Second),
             TkHd   : hd,
         }
-        t.tkTask = append(t.tkTask, task)
+        p.tkTask = append(p.tkTask, task)
         c.Logger.WithFields(c.LogFields{
             "taskName" : name,
             "interval" : interval,
@@ -98,15 +98,15 @@ func (t *TickerTask) initTkTask() {
     }
 }
 
-func (t *TickerTask) Init(m <-chan c.SIGNAL) {
+func (p *TickerTask) Init(m <-chan c.SIGNAL) {
     go func() {
         for {
             select {
-            case signal := <-m:
-                if signal == c.SIGSTART {
-                    t.run()
-                } else if signal == c.SIGSTOP {
-                    t.stop()
+            case sg := <-m:
+                if sg == c.SIGSTART {
+                    p.run()
+                } else if sg == c.SIGSTOP {
+                    p.stop()
                 }
             case <- time.After(c.DefaultSleepDur):
             }
@@ -114,12 +114,8 @@ func (t *TickerTask) Init(m <-chan c.SIGNAL) {
     }()
 }
 
-func (t *TickerTask) Status() c.RState {
-    return t.State
-}
-
-func (t *TickerTask) Monitor() []*c.MonitorPack {
-    return nil
+func (p *TickerTask) Status() c.RState {
+    return p.state
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

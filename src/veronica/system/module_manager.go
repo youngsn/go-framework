@@ -40,28 +40,28 @@ func NewModuleManager() *ModuleManager {
 }
 
 // init module to module manager
-func (m *ModuleManager) Init(name string, inst c.Module) {
-    m.appModules[name] = inst
+func (p *ModuleManager) Init(name string, inst c.Module) {
+    p.appModules[name] = inst
 
-    m.priority    = append(m.priority, name)
-    m.pipes[name] = make(chan c.SIGNAL, 1)          // init signal chan
-    inst.Init(m.pipes[name])
+    p.priority    = append(p.priority, name)
+    p.pipes[name] = make(chan c.SIGNAL, 1)          // init signal chan
+    inst.Init(p.pipes[name])
 }
 
 // Sending broadcast signal to all modules.
 // Custome SIGNAL can be defined.
-func (m *ModuleManager) SendBoardcast(s c.SIGNAL) {
-    for _, pipe := range m.pipes {
-        pipe<- s
+func (p *ModuleManager) SendBoardcast(sg c.SIGNAL) {
+    for _, pipe := range p.pipes {
+        pipe<- sg
     }
 }
 
 // Send SIGNAL to module
-func (m *ModuleManager) SendSignal(s c.SIGNAL, name string) error {
-    if _, ok := m.appModules[name]; !ok {
+func (p *ModuleManager) SendSignal(sg c.SIGNAL, name string) error {
+    if _, ok := p.appModules[name]; !ok {
         return fmt.Errorf("module %s not exist", name)
     }
-    m.pipes[name]<- s
+    p.pipes[name]<- sg
     return nil
 }
 
@@ -69,12 +69,12 @@ func (m *ModuleManager) SendSignal(s c.SIGNAL, name string) error {
 // Method used SendBoardcast() sending START SIGNAL.
 // Also here can be changed in sequence as expected.
 // Module should start in time, or panic will be throwned.
-func (m *ModuleManager) Start() error {
-    if len(m.appModules) == 0 {
+func (p *ModuleManager) Start() error {
+    if len(p.appModules) == 0 {
         return fmt.Errorf("failed, no valid modules")
     }
-    for name, inst := range m.appModules {
-        m.SendSignal(c.SIGSTART, name)
+    for name, inst := range p.appModules {
+        p.SendSignal(c.SIGSTART, name)
         for inst.Status() != c.Running {            // wait module to startup
             time.Sleep(c.DefaultSleepDur)
         }
@@ -88,11 +88,11 @@ func (m *ModuleManager) Start() error {
 
 // Stop all modules.
 // Stop work will follow the defined priority in sequence.
-func (m *ModuleManager) Stop() {
-    p := make([]string, len(m.priority))
-    copy(p, m.priority)
-    for _, name := range p {
-        if err  := m.stopModule(name); err != nil {
+func (p *ModuleManager) Stop() {
+    pri := make([]string, len(p.priority))
+    copy(pri, p.priority)
+    for _, name := range pri {
+        if err  := p.stopModule(name); err != nil {
             c.Logger.WithFields(c.LogFields{
                 "module" : name,
                 "errmsg" : err.Error(),
@@ -106,14 +106,14 @@ func (m *ModuleManager) Stop() {
 }
 
 // Get app module list
-func (m *ModuleManager) GetAppModules() map[string]c.Module {
-    return m.appModules
+func (p *ModuleManager) GetAppModules() map[string]c.Module {
+    return p.appModules
 }
 
 // Get Started module quantity.
-func (m *ModuleManager) runModuleNum() int {
+func (p *ModuleManager) runModuleNum() int {
     cnt := 0
-    for _, module := range m.appModules {
+    for _, module := range p.appModules {
         if module.Status() == c.Running {
             cnt++
         }
@@ -122,9 +122,9 @@ func (m *ModuleManager) runModuleNum() int {
 }
 
 // Get Stopped module qunatity.
-func (m *ModuleManager) stopModuleNum() int {
+func (p *ModuleManager) stopModuleNum() int {
     cnt := 0
-    for _, inst := range m.appModules {
+    for _, inst := range p.appModules {
         if inst.Status() == c.Stopped {
             cnt++
         }
@@ -136,25 +136,25 @@ func (m *ModuleManager) stopModuleNum() int {
 // Send STOP SIGNAL to module and wait module stop.
 // If stopping used more than this.moduleStopDelay time,
 // ModuleManager will forget this module status and flag it stopped.
-func (m *ModuleManager) stopModule(name string) error {
-    inst, ok := m.appModules[name]
+func (p *ModuleManager) stopModule(name string) error {
+    inst, ok := p.appModules[name]
     if ok == false {
         return fmt.Errorf("%s not exist", name)
     }
 
-    m.SendSignal(c.SIGSTOP, name)
-    timer   := time.NewTimer(m.stopDelay)
-    stopped := false
-    for !stopped {
+    p.SendSignal(c.SIGSTOP, name)
+    timer := time.NewTimer(p.stopDelay)
+    stop  := false
+    for !stop {
         select {
         case <-timer.C:
-            m.unload(name)
-            stopped = true
+            p.unload(name)
+            stop = true
             return fmt.Errorf("can not stop in 30s, abandon")
         default:
             if inst.Status() == c.Stopped {
-                m.unload(name)
-                stopped = true
+                p.unload(name)
+                stop = true
             } else {
                 time.Sleep(c.DefaultSleepDur)
             }
@@ -164,17 +164,17 @@ func (m *ModuleManager) stopModule(name string) error {
 }
 
 // Unload module, used to stop module.(just delete module from map and priority)
-func (m *ModuleManager) unload(name string) {
-    m.mu.Lock()
-    defer m.mu.Unlock()
+func (p *ModuleManager) unload(name string) {
+    p.mu.Lock()
+    defer p.mu.Unlock()
 
-    if _, ok := m.appModules[name]; ok {
-        delete(m.appModules, name)
+    if _, ok := p.appModules[name]; ok {
+        delete(p.appModules, name)
     }
 
-    for i, moduleName := range m.priority {     // delete module from array
+    for i, moduleName := range p.priority {     // delete module from array
         if moduleName == name {                 // delete
-            m.priority = append(m.priority[: i], m.priority[(i + 1) : ]...)
+            p.priority = append(p.priority[: i], p.priority[(i + 1) : ]...)
             break
         } else {
             continue

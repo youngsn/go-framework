@@ -124,14 +124,14 @@ func initApp() error {
     SysManager = initAppModule()        // init app module
 
     chanSize  := c.Config.ChanSize
-    c.DemoQueue    = make(chan int, chanSize)
     c.MonitorQueue = make(chan []*c.MonitorPack, chanSize)
+    c.DemoQueue    = make(chan int, chanSize)
     return nil
 }
 
 func initAppModule() *ModuleManager {
     m := NewModuleManager()
-    m.Init("Demo", demo.NewDispatcher())        // add app modules
+    m.Init("Demo", demo.NewDemoDispatcher())        // add app modules
     return m
 }
 
