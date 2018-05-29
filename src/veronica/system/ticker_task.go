@@ -81,7 +81,7 @@ func (p *TickerTask) initTkTask() {
     for name, interval := range c.Config.Tickers {
         hd   := getTickerHandler(name)               // get task handler
         if interval < p.interval {
-            panic(fmt.Sprintf("%s, interval must large %ds", name, p.interval))
+            panic(fmt.Sprintf("task: %s, interval less %ds", name, p.interval))
         }
 
         task := &tkTask{

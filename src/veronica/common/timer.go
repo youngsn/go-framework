@@ -1,6 +1,6 @@
 package common
 
-import(
+import (
     "time"
 )
 
@@ -21,20 +21,15 @@ func NewTimerBox() *TimerBox {
     }
 }
 
-/**
- * start a named timer
- *
- * @param name
- * @return bool
- */
-func (t *TimerBox) Start(name string) bool {
-    if _, ok := t.box[name]; !ok { // init timer
-        t.box[name] = &timer{
+// start a named timer
+func (p *TimerBox) Start(name string) bool {
+    if _, ok := p.box[name]; !ok { // init timer
+        p.box[name] = &timer{
             Stopped : true,
         }
     }
 
-    tm, _ := t.box[name]
+    tm, _ := p.box[name]
     if tm.Stopped == false {       // timer is running
         return false
     }
@@ -43,21 +38,26 @@ func (t *TimerBox) Start(name string) bool {
     return true
 }
 
-/**
- * stop a timer
- *
- * @param name
- * @return int64, bool
- */
-func (t *TimerBox) Stop(name string) (int64, bool) {
-    tm, ok := t.box[name]
-    if !ok {                                // init timer
+// stop a named timer
+func (p *TimerBox) Stop(name string) (int64, bool) {
+    tm, ok := p.box[name]
+    if !ok {
         return 0, false
     }
 
     tm.UsedTs  = tm.StartTs.UnixNano() - time.Now().UnixNano()
     tm.Stopped = true
     return tm.UsedTs, true
+}
+
+// get timer used time
+func (p *TimerBox) GetUseTime(name string) float64 {
+    tm, ok := p.box[name]
+    if !ok {
+        return 0
+    }
+    usage  := tm.UsedTs
+    return float64(usage / 1000000)
 }
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */
